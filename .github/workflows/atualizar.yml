@@ -2,7 +2,7 @@ name: Atualizar pedidos e publicar
 
 on:
   schedule:
-    - cron: "3-58/10 11-23,0-1 * * *"
+    - cron: "3-58/5 11-23,0-1 * * *"
   workflow_dispatch:
   push:
     branches: [main]
