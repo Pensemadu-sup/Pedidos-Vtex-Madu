@@ -40,8 +40,8 @@ button,input,select{font:inherit;color:inherit}
 .glass{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(22px);backdrop-filter:saturate(180%) blur(22px);border-bottom:1px solid var(--linha)}
 header{position:sticky;top:0;z-index:6;padding-top:var(--st)}
 .topo{max-width:1180px;margin:0 auto;height:56px;padding:0 24px;display:flex;align-items:center;gap:12px}
-.marca{font-weight:900;font-size:1.6rem;letter-spacing:-.01em;color:var(--marca);text-decoration:none}
-.atual{margin-left:auto;font-size:.78rem;color:var(--suave)}
+.marca{display:block;width:92px;height:28px;background:var(--marca);-webkit-mask:url("icons/logo-madu.png") no-repeat left center/contain;mask:url("icons/logo-madu.png") no-repeat left center/contain;font-size:0;color:transparent;overflow:hidden}
+  .atual{margin-left:auto;font-size:.78rem;color:var(--suave)}
 .tema,.sair{height:40px;border:0;border-radius:999px;background:var(--faixa);cursor:pointer;transition:background .25s var(--ease),transform .25s var(--ease)}
 .tema{width:40px;display:grid;place-items:center;flex:none}
 .sair{padding:0 18px;font-size:.82rem;font-weight:600}
@@ -138,8 +138,8 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 <body>
 <header class="glass" style="border-bottom:1px solid var(--linha)">
     <div class="topo">
-    <a class="marca" href="./" aria-label="MAD.U, voltar ao painel">MAD.U</a>
-    <span class="atual" id="atual"></span>
+<a class="marca" href="./" aria-label="MAD.U, voltar ao painel" role="img"></a>
+      <span class="atual" id="atual"></span>
     <button type="button" class="sair" id="btnSair" hidden>Sair</button>
     <button type="button" class="tema" id="btnTema" aria-pressed="false" aria-label="Ativar modo escuro" title="Modo escuro">
       <svg class="lua" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
