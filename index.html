@@ -515,12 +515,13 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 #manual .bloco{max-width:720px;margin-bottom:20px}
 .man{display:grid;gap:12px}
 .man label{display:grid;gap:6px;font-size:.8rem;font-weight:600;color:var(--suave)}
-.man input{min-height:46px;padding:0 16px;border:1px solid var(--linha);border-radius:999px;background:var(--faixa);font-size:.95rem;font-weight:600;min-width:0;width:100%}
-.mi{display:grid;grid-template-columns:1fr 84px 140px 40px;gap:8px;align-items:center}
+.man input,.man select{min-height:46px;padding:0 16px;border:1px solid var(--linha);border-radius:999px;background:var(--faixa);font-size:.95rem;font-weight:600;min-width:0;width:100%}
+.man2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mi{display:grid;grid-template-columns:1fr 120px 84px 140px 40px;gap:8px;align-items:center}
 .mi .x{width:40px;height:40px;border:0;border-radius:50%;background:var(--faixa);cursor:pointer;font-size:1.2rem}
 .lin{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:14px 18px;font-size:.86rem}
 .btn.peq{min-height:34px;padding:0 14px}
-@media(max-width:600px){.mi{grid-template-columns:1fr 1fr 40px}.mi .in-n{grid-column:1/-1}}`;
+@media(max-width:600px){.mi{grid-template-columns:1fr 1fr 40px}.mi .in-n,.mi .in-r{grid-column:1/-1}.man2{grid-template-columns:1fr}}`;
   document.head.appendChild(st);
 
   var mainEl = document.querySelector("main");
@@ -530,13 +531,40 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   mainEl.prepend(nav);
   var sec = document.createElement("section");
   sec.id = "manual"; sec.hidden = true;
-  sec.innerHTML = `
+sec.innerHTML = `
 <div class="hero surge"><p class="eyebrow">Pedido manual</p><h1>Novo pedido</h1><p class="sub">Registre uma venda feita fora da VTEX. Ela entra nas contas do painel.</p></div>
 <form class="bloco man" id="formMan" novalidate>
-  <label>Data do pedido<input type="date" id="mData"></label>
+  <div class="man2">
+    <label>Data do pedido<input type="date" id="mData"></label>
+    <label>Hora<input type="time" id="mHora" value="12:00"></label>
+  </div>
+  <label>Status do pedido
+    <select id="mStatus">
+      <option value="invoiced">Faturado</option>
+      <option value="payment-approved">Pagamento aprovado</option>
+      <option value="payment-pending">Aguardando pagamento</option>
+      <option value="handling">Em preparo</option>
+      <option value="canceled">Cancelado</option>
+    </select>
+  </label>
+  <div class="man2">
+    <label>Estado (UF) do cliente
+      <select id="mUF"><option value="">Selecione</option>
+        <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option>
+      </select>
+    </label>
+    <label>Forma de pagamento
+      <input id="mPag" list="listaPag" placeholder="Ex.: Pix" autocomplete="off">
+      <datalist id="listaPag"><option value="Pix"><option value="Visa"><option value="Mastercard"><option value="American Express"><option value="Elo"><option value="Hipercard"><option value="Boleto Bancário"><option value="Dinheiro"><option value="Transferência"></datalist>
+    </label>
+  </div>
+  <label>Cupom (opcional)<input id="mCupom" autocapitalize="characters" autocomplete="off" placeholder="Deixe vazio se não usou"></label>
   <div class="man" id="mItens"></div>
   <button type="button" class="btn sec" id="mAdd">+ Adicionar item</button>
-  <label>Frete (R$)<input id="mFrete" inputmode="decimal" placeholder="0,00"></label>
+  <div class="man2">
+    <label>Frete (R$)<input id="mFrete" inputmode="decimal" placeholder="0,00"></label>
+    <label>Descontos (R$)<input id="mDesc" inputmode="decimal" placeholder="0,00"></label>
+  </div>
   <p class="proj" id="mTotal"></p>
   <button class="btn" type="submit" id="mSalvar">Salvar pedido</button>
   <p class="erro" id="mMsg" role="alert" hidden></p>
@@ -594,20 +622,21 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   }
 
   function aviso(t, ok) { var m = $("mMsg"); m.textContent = t; m.style.color = ok ? "var(--ok)" : ""; m.hidden = false; }
-  function linhaItem() {
-    var d = document.createElement("div"); d.className = "mi";
-    d.innerHTML = '<input class="in-n" placeholder="Item vendido" aria-label="Item vendido"><input class="in-q" type="number" min="1" step="1" value="1" aria-label="Quantidade"><input class="in-p" inputmode="decimal" placeholder="Valor unit. (R$)" aria-label="Valor unitário"><button type="button" class="x" aria-label="Remover item">×</button>';
-    $("mItens").appendChild(d);
-  }
-  function totalMan() {
-    var t = 0;
-    [].forEach.call($("mItens").children, function (r) {
-      var q = parseInt(r.querySelector(".in-q").value, 10), p = num(r.querySelector(".in-p").value);
-      if (q > 0 && p >= 0) t += q * p;
-    });
-    var f = num($("mFrete").value || "0"); if (f >= 0) t += f;
-    $("mTotal").innerHTML = "Total do pedido: <b>" + BRL.format(t) + "</b> (itens + frete)";
-  }
+ function linhaItem() {
+  var d = document.createElement("div"); d.className = "mi";
+  d.innerHTML = '<input class="in-n" placeholder="Item vendido" aria-label="Item vendido"><input class="in-r" placeholder="Ref./SKU" aria-label="Referência do item"><input class="in-q" type="number" min="1" step="1" value="1" aria-label="Quantidade"><input class="in-p" inputmode="decimal" placeholder="Valor unit. (R$)" aria-label="Valor unitário"><button type="button" class="x" aria-label="Remover item">×</button>';
+  $("mItens").appendChild(d);
+}
+function totalMan() {
+  var t = 0;
+  [].forEach.call($("mItens").children, function (r) {
+    var q = parseInt(r.querySelector(".in-q").value, 10), p = num(r.querySelector(".in-p").value);
+    if (q > 0 && p >= 0) t += q * p;
+  });
+  var f = num($("mFrete").value || "0"); if (f >= 0) t += f;
+  var dc = num($("mDesc").value || "0"); if (dc >= 0) t -= dc;
+  $("mTotal").innerHTML = "Total do pedido: <b>" + BRL.format(Math.max(0, t)) + "</b> (itens + frete − descontos)";
+}
   function montar() {
     base = PED.concat(MAN).map(function (o) { o.dia = ymd(o.data); o.itens = o.itens || []; return o; });
     var m = base.reduce(function (a, o) { return !a || o.dia < a ? o.dia : a; }, "");
@@ -648,26 +677,31 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     if (x && $("mItens").children.length > 1) { x.parentNode.remove(); totalMan(); }
   });
   $("formMan").addEventListener("input", totalMan);
-  $("formMan").addEventListener("submit", async function (e) {
+    $("formMan").addEventListener("submit", async function (e) {
     e.preventDefault(); $("mMsg").hidden = true;
-    var data = $("mData").value, itens = [];
+    var data = $("mData").value, hora = $("mHora").value || "12:00", itens = [];
     [].forEach.call($("mItens").children, function (r) {
-      itens.push({ ref: "", nome: r.querySelector(".in-n").value.trim(), qtd: parseInt(r.querySelector(".in-q").value, 10), preco: cent(num(r.querySelector(".in-p").value)) });
+      itens.push({ ref: r.querySelector(".in-r").value.trim(), nome: r.querySelector(".in-n").value.trim(), qtd: parseInt(r.querySelector(".in-q").value, 10), preco: cent(num(r.querySelector(".in-p").value)) });
     });
     var frete = $("mFrete").value.trim() ? cent(num($("mFrete").value)) : 0;
-    if (!data || !itens.length || !(frete >= 0) || itens.some(function (i) { return !i.nome || !(i.qtd > 0) || !(i.preco >= 0); })) {
-      aviso("Preencha a data e, em cada item, o nome, a quantidade e o valor unitário."); return;
+    var desc = $("mDesc").value.trim() ? cent(num($("mDesc").value)) : 0;
+    var uf = $("mUF").value, pag = $("mPag").value.trim(), cupom = $("mCupom").value.trim(), status = $("mStatus").value;
+    if (!data || !uf || !pag || !itens.length || !(frete >= 0) || !(desc >= 0) || itens.some(function (i) { return !i.nome || !(i.qtd > 0) || !(i.preco >= 0); })) {
+      aviso("Preencha data, estado, forma de pagamento e, em cada item, nome, quantidade e valor unitário."); return;
     }
+    var sub = itens.reduce(function (s, i) { return s + i.qtd * i.preco; }, 0);
+    if (desc > sub + frete) { aviso("O desconto não pode ser maior que o total do pedido."); return; }
     var ped = {
-      id: "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T12:00:00-03:00", status: "invoiced",
-      valor: cent(itens.reduce(function (s, i) { return s + i.qtd * i.preco; }, 0) + frete),
-      frete: frete, desconto: 0, estado: "", pagamento: "Manual", cupom: "", itens: itens
+      id: "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T" + hora + ":00-03:00", status: status,
+      valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, cupom: cupom, itens: itens
     };
     var btn = $("mSalvar"); btn.disabled = true; btn.textContent = "Salvando…";
     try {
       MAN = await salvarMan(function (l) { return l.concat([ped]); }, "Pedido manual " + ped.id);
       montar(); desenhar(); listaMan();
-      $("mItens").innerHTML = ""; linhaItem(); $("mFrete").value = ""; totalMan();
+      $("mItens").innerHTML = ""; linhaItem();
+      ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
+      $("mUF").value = ""; $("mStatus").value = "invoiced"; totalMan();
       aviso("Pedido salvo. Já aparece no painel; o site publicado atualiza em 1 a 2 minutos.", true);
     } catch (x) { aviso(MSGM[x.message] || "Não foi possível salvar (" + x.message + ")."); }
     btn.disabled = false; btn.textContent = "Salvar pedido";
