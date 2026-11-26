@@ -682,7 +682,7 @@ function totalMan() {
       if (o.cupom) info.push("Cupom " + o.cupom);
       return "<div class='ped'><div class='lin'><span><b>" + esc(o.id) + "</b><small>" + esc(info.join(" · ")) + "</small><small>" +
         esc(o.itens.map(function (x) { return x.qtd + "× " + x.nome; }).join(", ")) + "</small></span><span class='v'>" + BRL.format(o.valor) +
-        "<small>" + esc(STATUS[o.status] || o.status) +  "</span><span class='acoes'><button type='button' class='btn sec peq' data-e='" + esc(o.id) + "'>Editar</button><button type='button' class='btn sec peq' data-x='" + esc(o.id) + "'>Excluir</button></span></div></div>";;
+                "<small>" + esc(STATUS[o.status] || o.status) + "</small></span><span class='acoes'><button type='button' class='btn sec peq' data-e='" + esc(o.id) + "'>Editar</button><button type='button' class='btn sec peq' data-x='" + esc(o.id) + "'>Excluir</button></span></div></div>";
     }).join("") : "<p class='vazio'>Nenhum pedido manual ainda.</p>";
   }
   function pintaToken() {
