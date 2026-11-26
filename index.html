@@ -460,15 +460,14 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
   }
 
-  function mostrar(dados) {
-    base = dados.pedidos.map(function (o) { o.dia = ymd(o.data); o.itens = o.itens || []; return o; });
-    MIN = dados.inicio ? ymd(dados.inicio) : base.reduce(function (a, o) { return !a || o.dia < a ? o.dia : a; }, "") || hoje();
-    $("de").min = $("ate").min = MIN; $("de").max = $("ate").max = hoje();
+    function mostrar(dados) {
+    PED = dados.pedidos; INICIO = dados.inicio ? ymd(dados.inicio) : "";
+    montar();
     $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
-    $("telaLogin").hidden = true; $("painel").hidden = false; $("barraF").hidden = false; $("btnSair").hidden = false;
-    desenhar();
+    $("telaLogin").hidden = true; $("painel").hidden = false; $("barraF").hidden = false; $("btnSair").hidden = false; $("abas").hidden = false;
+    desenhar(); listaMan();
   }
-
+  
   function seg(id, fn) {
     $(id).addEventListener("click", function (e) {
       var b = e.target.closest("button"); if (!b) return;
@@ -488,6 +487,189 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   $("busca").addEventListener("input", function (e) { BUSCA = e.target.value; LIM = 15; pedidos(); });
   $("btnCsv").addEventListener("click", csv);
 
+    /* ===== Pedido manual ===== */
+  var PED = [], MAN = [], INICIO = "", SENHA = "";
+  var REPO = "Pensemadu-sup/Pedidos-Vtex-Madu", ARQ = "data/manuais.enc.json";
+  var MSGM = {
+    "sem-token": "Cole primeiro o token do GitHub no quadro abaixo.",
+    "token": "O GitHub recusou o token. Ele precisa valer para este repositório, com Contents: leitura e escrita, e não pode ter vencido.",
+    "conflito": "Alguém salvou ao mesmo tempo. Tente de novo.",
+    "senha": "Não foi possível abrir o arquivo de pedidos manuais com a senha atual."
+  };
+
+  var st = document.createElement("style");
+  st.textContent = `
+.abas{display:flex;gap:8px;padding-top:16px}
+#manual .bloco{max-width:720px;margin-bottom:20px}
+.man{display:grid;gap:12px}
+.man label{display:grid;gap:6px;font-size:.8rem;font-weight:600;color:var(--suave)}
+.man input{min-height:46px;padding:0 16px;border:1px solid var(--linha);border-radius:999px;background:var(--faixa);font-size:.95rem;font-weight:600;min-width:0;width:100%}
+.mi{display:grid;grid-template-columns:1fr 84px 140px 40px;gap:8px;align-items:center}
+.mi .x{width:40px;height:40px;border:0;border-radius:50%;background:var(--faixa);cursor:pointer;font-size:1.2rem}
+.lin{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:14px 18px;font-size:.86rem}
+.btn.peq{min-height:34px;padding:0 14px}
+@media(max-width:600px){.mi{grid-template-columns:1fr 1fr 40px}.mi .in-n{grid-column:1/-1}}`;
+  document.head.appendChild(st);
+
+  var mainEl = document.querySelector("main");
+  var nav = document.createElement("nav");
+  nav.className = "abas"; nav.id = "abas"; nav.hidden = true; nav.setAttribute("aria-label", "Seções");
+  nav.innerHTML = '<button type="button" class="chip" data-a="painel" aria-pressed="true">Painel</button><button type="button" class="chip" data-a="man" aria-pressed="false">Pedido manual</button>';
+  mainEl.prepend(nav);
+  var sec = document.createElement("section");
+  sec.id = "manual"; sec.hidden = true;
+  sec.innerHTML = `
+<div class="hero surge"><p class="eyebrow">Pedido manual</p><h1>Novo pedido</h1><p class="sub">Registre uma venda feita fora da VTEX. Ela entra nas contas do painel.</p></div>
+<form class="bloco man" id="formMan" novalidate>
+  <label>Data do pedido<input type="date" id="mData"></label>
+  <div class="man" id="mItens"></div>
+  <button type="button" class="btn sec" id="mAdd">+ Adicionar item</button>
+  <label>Frete (R$)<input id="mFrete" inputmode="decimal" placeholder="0,00"></label>
+  <p class="proj" id="mTotal"></p>
+  <button class="btn" type="submit" id="mSalvar">Salvar pedido</button>
+  <p class="erro" id="mMsg" role="alert" hidden></p>
+</form>
+<div class="bloco" id="mToken"></div>
+<div class="bloco"><div class="bloco-topo"><h2>Pedidos manuais</h2></div><div class="peds" id="mLista"></div></div>`;
+  mainEl.appendChild(sec);
+
+  function num(s) { s = String(s).trim(); if (s.indexOf(",") > -1) s = s.replace(/\./g, "").replace(",", "."); var v = parseFloat(s); return isFinite(v) ? v : NaN; }
+  function cent(v) { return Math.round(v * 100) / 100; }
+  function u64(u) { var s = ""; for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+  async function chave(senha, salt, uso) {
+    var mat = await crypto.subtle.importKey("raw", new TextEncoder().encode(limpa(senha)), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 250000, hash: "SHA-256" }, mat, { name: "AES-GCM", length: 256 }, false, [uso]);
+  }
+  async function decifrar(j, senha) {
+    var k = await chave(senha, b64(j.salt), "decrypt");
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(j.iv) }, k, b64(j.dados))));
+  }
+  async function cifrar(obj, senha) {
+    var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    var k = await chave(senha, salt, "encrypt");
+    var c = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, k, new TextEncoder().encode(JSON.stringify(obj))));
+    return JSON.stringify({ salt: u64(salt), iv: u64(iv), dados: u64(c) });
+  }
+  async function lerCripto(url, senha) {
+    var r = await fetch(url, { cache: "no-store" });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error("rede");
+    return decifrar(await r.json(), senha);
+  }
+
+  function tk() { try { return localStorage.getItem("madu-gh") || ""; } catch (x) { return ""; } }
+  function gh(metodo, corpo) {
+    return fetch("https://api.github.com/repos/" + REPO + "/contents/" + ARQ, {
+      method: metodo,
+      headers: { Authorization: "Bearer " + tk(), Accept: "application/vnd.github+json" },
+      body: corpo ? JSON.stringify(corpo) : undefined
+    });
+  }
+  /* lê a versão mais recente do arquivo, aplica a mudança e grava de volta */
+  async function salvarMan(mut, msg) {
+    if (!tk()) throw new Error("sem-token");
+    var r = await gh("GET"), sha, lista = [];
+    if (r.status === 401 || r.status === 403) throw new Error("token");
+    if (r.status !== 404) {
+      if (!r.ok) throw new Error("api " + r.status);
+      var j = await r.json(); sha = j.sha;
+      try { lista = await decifrar(JSON.parse(atob(j.content.replace(/\s/g, ""))), SENHA); } catch (e) { throw new Error("senha"); }
+    }
+    lista = mut(lista);
+    var p = await gh("PUT", { message: msg, content: btoa(await cifrar(lista, SENHA)), sha: sha, branch: "main" });
+    if (!p.ok) throw new Error(p.status === 401 || p.status === 403 || p.status === 404 ? "token" : p.status === 409 || p.status === 422 ? "conflito" : "api " + p.status);
+    return lista;
+  }
+
+  function aviso(t, ok) { var m = $("mMsg"); m.textContent = t; m.style.color = ok ? "var(--ok)" : ""; m.hidden = false; }
+  function linhaItem() {
+    var d = document.createElement("div"); d.className = "mi";
+    d.innerHTML = '<input class="in-n" placeholder="Item vendido" aria-label="Item vendido"><input class="in-q" type="number" min="1" step="1" value="1" aria-label="Quantidade"><input class="in-p" inputmode="decimal" placeholder="Valor unit. (R$)" aria-label="Valor unitário"><button type="button" class="x" aria-label="Remover item">×</button>';
+    $("mItens").appendChild(d);
+  }
+  function totalMan() {
+    var t = 0;
+    [].forEach.call($("mItens").children, function (r) {
+      var q = parseInt(r.querySelector(".in-q").value, 10), p = num(r.querySelector(".in-p").value);
+      if (q > 0 && p >= 0) t += q * p;
+    });
+    var f = num($("mFrete").value || "0"); if (f >= 0) t += f;
+    $("mTotal").innerHTML = "Total do pedido: <b>" + BRL.format(t) + "</b> (itens + frete)";
+  }
+  function montar() {
+    base = PED.concat(MAN).map(function (o) { o.dia = ymd(o.data); o.itens = o.itens || []; return o; });
+    var m = base.reduce(function (a, o) { return !a || o.dia < a ? o.dia : a; }, "");
+    if (INICIO && (!m || INICIO < m)) m = INICIO;
+    MIN = m || hoje();
+    $("de").min = $("ate").min = MIN; $("de").max = $("ate").max = hoje();
+  }
+  function listaMan() {
+    var L = MAN.slice().sort(function (a, b) { return new Date(b.data) - new Date(a.data); });
+    $("mLista").innerHTML = L.length ? L.map(function (o) {
+      return "<div class='ped'><div class='lin'><span><b>" + esc(o.id) + "</b><small>" + br(ymd(o.data), 1) + " · " +
+        esc(o.itens.map(function (x) { return x.qtd + "× " + x.nome; }).join(", ")) + "</small></span><span class='v'>" + BRL.format(o.valor) +
+        "</span><button type='button' class='btn sec peq' data-x='" + esc(o.id) + "'>Excluir</button></div></div>";
+    }).join("") : "<p class='vazio'>Nenhum pedido manual ainda.</p>";
+  }
+  function pintaToken() {
+    var el = $("mToken");
+    if (tk()) {
+      el.innerHTML = "<p class='leg' style='margin:0'>Token do GitHub configurado neste navegador.</p><button type='button' class='btn sec mais' id='tkOff'>Remover token</button>";
+      $("tkOff").onclick = function () { try { localStorage.removeItem("madu-gh"); } catch (x) {} pintaToken(); };
+    } else {
+      el.innerHTML = "<h2>Ative o salvamento</h2><p class='leg'>Cole o token do GitHub (Contents: leitura e escrita, só neste repositório). Ele fica guardado apenas neste navegador.</p><div class='acoes mais'><input class='busca' id='tkIn' type='password' placeholder='Token do GitHub' autocomplete='off' aria-label='Token do GitHub'><button type='button' class='btn' id='tkOk'>Guardar</button></div>";
+      $("tkOk").onclick = function () { var v = $("tkIn").value.trim(); if (!v) return; try { localStorage.setItem("madu-gh", v); } catch (x) {} pintaToken(); };
+    }
+  }
+
+  $("abas").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var man = b.dataset.a === "man";
+    [].forEach.call($("abas").querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    $("painel").hidden = man; $("barraF").hidden = man; $("manual").hidden = !man;
+    if (man) { pintaToken(); $("mData").max = hoje(); if (!$("mData").value) $("mData").value = hoje(); }
+    window.scrollTo(0, 0);
+  });
+  $("mAdd").addEventListener("click", function () { linhaItem(); });
+  $("mItens").addEventListener("click", function (e) {
+    var x = e.target.closest(".x");
+    if (x && $("mItens").children.length > 1) { x.parentNode.remove(); totalMan(); }
+  });
+  $("formMan").addEventListener("input", totalMan);
+  $("formMan").addEventListener("submit", async function (e) {
+    e.preventDefault(); $("mMsg").hidden = true;
+    var data = $("mData").value, itens = [];
+    [].forEach.call($("mItens").children, function (r) {
+      itens.push({ ref: "", nome: r.querySelector(".in-n").value.trim(), qtd: parseInt(r.querySelector(".in-q").value, 10), preco: cent(num(r.querySelector(".in-p").value)) });
+    });
+    var frete = $("mFrete").value.trim() ? cent(num($("mFrete").value)) : 0;
+    if (!data || !itens.length || !(frete >= 0) || itens.some(function (i) { return !i.nome || !(i.qtd > 0) || !(i.preco >= 0); })) {
+      aviso("Preencha a data e, em cada item, o nome, a quantidade e o valor unitário."); return;
+    }
+    var ped = {
+      id: "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T12:00:00-03:00", status: "invoiced",
+      valor: cent(itens.reduce(function (s, i) { return s + i.qtd * i.preco; }, 0) + frete),
+      frete: frete, desconto: 0, estado: "", pagamento: "Manual", cupom: "", itens: itens
+    };
+    var btn = $("mSalvar"); btn.disabled = true; btn.textContent = "Salvando…";
+    try {
+      MAN = await salvarMan(function (l) { return l.concat([ped]); }, "Pedido manual " + ped.id);
+      montar(); desenhar(); listaMan();
+      $("mItens").innerHTML = ""; linhaItem(); $("mFrete").value = ""; totalMan();
+      aviso("Pedido salvo. Já aparece no painel; o site publicado atualiza em 1 a 2 minutos.", true);
+    } catch (x) { aviso(MSGM[x.message] || "Não foi possível salvar (" + x.message + ")."); }
+    btn.disabled = false; btn.textContent = "Salvar pedido";
+  });
+  $("mLista").addEventListener("click", async function (e) {
+    var b = e.target.closest("button[data-x]"); if (!b || !confirm("Excluir este pedido manual?")) return;
+    b.disabled = true; $("mMsg").hidden = true;
+    try {
+      MAN = await salvarMan(function (l) { return l.filter(function (o) { return o.id !== b.dataset.x; }); }, "Exclui pedido manual " + b.dataset.x);
+      montar(); desenhar(); listaMan();
+    } catch (x) { aviso(MSGM[x.message] || "Não foi possível excluir (" + x.message + ")."); b.disabled = false; }
+  });
+  linhaItem(); totalMan();
+  /* ===== fim do pedido manual ===== */
   var tip = $("tip");
   function dica(e) {
     var t = e.target.getAttribute && e.target.getAttribute("data-t");
@@ -503,9 +685,13 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   async function entrar(senha, silencioso) {
     $("erro").hidden = true; $("btnEntrar").disabled = true; $("btnEntrar").textContent = "Abrindo…";
     try {
-      var dados = await abrir(senha);
-      try { sessionStorage.setItem("madu-senha", senha); } catch (x) {}
-      mostrar(dados);
+        function mostrar(dados) {
+    PED = dados.pedidos; INICIO = dados.inicio ? ymd(dados.inicio) : "";
+    montar();
+    $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
+    $("telaLogin").hidden = true; $("painel").hidden = false; $("barraF").hidden = false; $("btnSair").hidden = false; $("abas").hidden = false;
+    desenhar(); listaMan();
+  }
     } catch (e) {
       try { sessionStorage.removeItem("madu-senha"); } catch (x) {}
       if (!silencioso) {
