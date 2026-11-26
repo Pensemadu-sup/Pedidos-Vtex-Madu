@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [index.html, buscar-pedidos.mjs, ".github/workflows/atualizar.yml"]
-
+    paths: [index.html, buscar-pedidos.mjs, ".github/workflows/atualizar.yml", "data/manuais.enc.json"]
+    
 permissions:
   contents: read
   pages: write
