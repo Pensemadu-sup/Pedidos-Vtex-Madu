@@ -15,7 +15,6 @@
 <script src="pwa-register.js" defer></script>
 <!-- ===== fim ===== -->
 
-<meta name="theme-color" content="#ffffff">
 <meta name="robots" content="noindex, nofollow">
 <title>Painel de pedidos — MAD.U</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -465,7 +464,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
       var it = o.itens.map(function (x) { return "<li><span>" + x.qtd + "× " + esc(x.nome || x.ref) + "</span><b>" + BRL.format(x.qtd * x.preco) + "</b></li>"; }).join("");
       if (o.frete) it += "<li><span>Frete</span><b>" + BRL.format(o.frete) + "</b></li>";
       if (o.desconto) it += "<li><span>Descontos</span><b>− " + BRL.format(o.desconto) + "</b></li>";
-      return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + <small>" + esc((o.pagamento || "—") + (o.parcelas > 1 ? " em " + o.parcelas + "x" : "")) + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
+      return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + "<small>" + esc((o.pagamento || "—") + (o.parcelas > 1 ? " em " + o.parcelas + "x" : "")) + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
     }).join("") : "<p class='vazio'>Nenhum pedido encontrado.</p>";
     $("btnMais").hidden = R.length <= LIM;
     $("btnMais").textContent = "Mostrar mais (" + (R.length - LIM) + ")";
@@ -668,7 +667,7 @@ function totalMan() {
   
     function ehCartao(p) { return /visa|master|amex|american|elo|hipercard|diners|cart[aã]o|cr[eé]dito/i.test(p || ""); }
   function parcCampo() { var c = ehCartao($("mPag").value); $("mParcL").hidden = !c; if (!c) $("mParc").value = "1"; }
-  function sairEdicao() { { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
+    function sairEdicao() { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
   function limpaForm() {
     $("mItens").innerHTML = ""; linhaItem();
     ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
