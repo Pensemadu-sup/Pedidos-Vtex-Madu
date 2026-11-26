@@ -26,6 +26,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;      // APIs e CDNs externos: direto da rede
+     if (url.pathname.includes('/data/')) return;          // dados de pedidos: sempre direto da rede
   if (req.headers.has('range') || SKIP_EXT.test(url.pathname)) return; // arquivos grandes: sem cache
 
   event.respondWith(
