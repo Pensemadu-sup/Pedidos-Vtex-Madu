@@ -2,12 +2,12 @@ name: Atualizar pedidos e publicar
 
 on:
   schedule:
-   - cron: "*/5 11-23,0-1 * * *"
+    - cron: "3-58/10 11-23,0-1 * * *"
   workflow_dispatch:
   push:
     branches: [main]
     paths: [index.html, buscar-pedidos.mjs, ".github/workflows/atualizar.yml", "data/manuais.enc.json"]
-    
+
 permissions:
   contents: read
   pages: write
@@ -24,7 +24,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-            - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-node@v5
         with:
@@ -45,8 +45,9 @@ jobs:
           cp -r data site/
 
       - uses: actions/configure-pages@v5
+
       - uses: actions/upload-pages-artifact@v4
-      with:
+        with:
           path: site
 
       - name: Publicar no GitHub Pages
