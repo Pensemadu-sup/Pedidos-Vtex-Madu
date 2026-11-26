@@ -66,6 +66,7 @@ async function main() {
         desconto: Math.abs(total("Discounts")) / 100,
         estado: o.shippingData?.address?.state || "",
         pagamento: o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || "",
+        parcelas: o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1,
         cupom: o.marketingData?.coupon || "",
         itens: (o.items || []).map(x => ({ ref: x.refId || "", nome: x.name || "", qtd: x.quantity || 0, preco: (x.sellingPrice ?? x.price ?? 0) / 100 })),
       });
