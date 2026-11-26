@@ -465,7 +465,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
       var it = o.itens.map(function (x) { return "<li><span>" + x.qtd + "× " + esc(x.nome || x.ref) + "</span><b>" + BRL.format(x.qtd * x.preco) + "</b></li>"; }).join("");
       if (o.frete) it += "<li><span>Frete</span><b>" + BRL.format(o.frete) + "</b></li>";
       if (o.desconto) it += "<li><span>Descontos</span><b>− " + BRL.format(o.desconto) + "</b></li>";
-      return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + "<small>" + esc(o.pagamento || "—") + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
+      return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + <small>" + esc((o.pagamento || "—") + (o.parcelas > 1 ? " em " + o.parcelas + "x" : "")) + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
     }).join("") : "<p class='vazio'>Nenhum pedido encontrado.</p>";
     $("btnMais").hidden = R.length <= LIM;
     $("btnMais").textContent = "Mostrar mais (" + (R.length - LIM) + ")";
@@ -578,6 +578,9 @@ sec.innerHTML = `
       <datalist id="listaPag"><option value="Pix"><option value="Visa"><option value="Mastercard"><option value="American Express"><option value="Elo"><option value="Hipercard"><option value="Boleto Bancário"><option value="Dinheiro"><option value="Transferência"></datalist>
     </label>
   </div>
+    <label id="mParcL" hidden>Parcelas no cartão
+    <select id="mParc"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select>
+  </label>
   <label>Cupom (opcional)<input id="mCupom" autocapitalize="characters" autocomplete="off" placeholder="Deixe vazio se não usou"></label>
   <div class="man" id="mItens"></div>
   <button type="button" class="btn sec" id="mAdd">+ Adicionar item</button>
@@ -662,11 +665,14 @@ function totalMan() {
   var dc = num($("mDesc").value || "0"); if (dc >= 0) t -= dc;
   $("mTotal").innerHTML = "Total do pedido: <b>" + BRL.format(Math.max(0, t)) + "</b> (itens + frete − descontos)";
 }
-    function sairEdicao() { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
+  
+    function ehCartao(p) { return /visa|master|amex|american|elo|hipercard|diners|cart[aã]o|cr[eé]dito/i.test(p || ""); }
+  function parcCampo() { var c = ehCartao($("mPag").value); $("mParcL").hidden = !c; if (!c) $("mParc").value = "1"; }
+  function sairEdicao() { { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
   function limpaForm() {
     $("mItens").innerHTML = ""; linhaItem();
     ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
-    $("mUF").value = ""; $("mStatus").value = "invoiced"; $("mHora").value = "12:00"; totalMan();
+     $("mUF").value = ""; $("mStatus").value = "invoiced"; $("mHora").value = "12:00"; $("mParc").value = "1"; parcCampo(); totalMan();
   }
   function montar() {
     base = PED.concat(MAN).map(function (o) { o.dia = ymd(o.data); o.itens = o.itens || []; return o; });
@@ -678,7 +684,7 @@ function totalMan() {
   function listaMan() {
     var L = MAN.slice().sort(function (a, b) { return new Date(b.data) - new Date(a.data); });
     $("mLista").innerHTML = L.length ? L.map(function (o) {
-      var info = [br(ymd(o.data), 1), o.estado || "—", o.pagamento || "—"];
+          var info = [br(ymd(o.data), 1), o.estado || "—", (o.pagamento || "—") + (o.parcelas > 1 ? " em " + o.parcelas + "x" : "")];
       if (o.cupom) info.push("Cupom " + o.cupom);
       return "<div class='ped'><div class='lin'><span><b>" + esc(o.id) + "</b><small>" + esc(info.join(" · ")) + "</small><small>" +
         esc(o.itens.map(function (x) { return x.qtd + "× " + x.nome; }).join(", ")) + "</small></span><span class='v'>" + BRL.format(o.valor) +
@@ -709,7 +715,8 @@ function totalMan() {
     var x = e.target.closest(".x");
     if (x && $("mItens").children.length > 1) { x.parentNode.remove(); totalMan(); }
   });
-  $("formMan").addEventListener("input", totalMan);
+   $("formMan").addEventListener("input", totalMan);
+  $("mPag").addEventListener("input", parcCampo);
     $("formMan").addEventListener("submit", async function (e) {
     e.preventDefault(); $("mMsg").hidden = true;
     var data = $("mData").value, hora = $("mHora").value || "12:00", itens = [];
@@ -726,7 +733,7 @@ function totalMan() {
     if (desc > sub + frete) { aviso("O desconto não pode ser maior que o total do pedido."); return; }
     var ped = {
            id: EDIT || "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T" + hora + ":00-03:00", status: status,
-      valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, cupom: cupom, itens: itens
+           valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, parcelas: ehCartao(pag) ? (parseInt($("mParc").value, 10) || 1) : 1, cupom: cupom, itens: itens
     };
     var btn = $("mSalvar"); btn.disabled = true; btn.textContent = "Salvando…";
     try {
@@ -746,7 +753,8 @@ function totalMan() {
     EDIT = o.id;
     $("mData").value = ymd(o.data);
     $("mHora").value = new Date(o.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
-    $("mStatus").value = o.status; $("mUF").value = o.estado || ""; $("mPag").value = o.pagamento || ""; $("mCupom").value = o.cupom || "";
+       $("mStatus").value = o.status; $("mUF").value = o.estado || ""; $("mPag").value = o.pagamento || ""; $("mCupom").value = o.cupom || "";
+    parcCampo(); $("mParc").value = String(o.parcelas || 1);
     $("mFrete").value = o.frete ? String(o.frete).replace(".", ",") : "";
     $("mDesc").value = o.desconto ? String(o.desconto).replace(".", ",") : "";
     $("mItens").innerHTML = "";
