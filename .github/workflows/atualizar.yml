@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [index.html, buscar-pedidos.mjs, ".github/workflows/atualizar.yml", "data/manuais.enc.json"]
+    paths:
+      - index.html
+      - buscar-pedidos.mjs
+      - .github/workflows/atualizar.yml
+      - data/manuais.enc.json
 
 permissions:
   contents: read
@@ -23,6 +27,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
+
     steps:
       - uses: actions/checkout@v5
 
@@ -40,7 +45,7 @@ jobs:
 
       - name: Montar o site
         run: |
-          mkdir site
+          mkdir -p site
           cp index.html site/
           cp -r data site/
 
@@ -50,15 +55,15 @@ jobs:
         with:
           path: site
 
-            - name: Publicar no GitHub Pages
-                id: deploy
-                uses: actions/deploy-pages@v4
+      - name: Publicar no GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4
         continue-on-error: true
 
-            - name: Aguardar antes de tentar de novo
-                if: steps.deploy.outcome == 'failure'
+      - name: Aguardar antes de tentar de novo
+        if: steps.deploy.outcome == 'failure'
         run: sleep 30
 
-            - name: Publicar no GitHub Pages (2ª tentativa)
-                if: steps.deploy.outcome == 'failure'
-                uses: actions/deploy-pages@v4
+      - name: Publicar no GitHub Pages (2ª tentativa)
+        if: steps.deploy.outcome == 'failure'
+        uses: actions/deploy-pages@v4
