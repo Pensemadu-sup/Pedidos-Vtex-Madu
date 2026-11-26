@@ -695,24 +695,42 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   $("btnSair").addEventListener("click", function () { try { sessionStorage.removeItem("madu-senha"); } catch (x) {} location.reload(); });
 
   async function entrar(senha, silencioso) {
-    $("erro").hidden = true; $("btnEntrar").disabled = true; $("btnEntrar").textContent = "Abrindo…";
-    try {
-        function mostrar(dados) {
-    PED = dados.pedidos; INICIO = dados.inicio ? ymd(dados.inicio) : "";
+  $("erro").hidden = true;
+  $("btnEntrar").disabled = true;
+  $("btnEntrar").textContent = "Abrindo…";
+
+  try {
+    var dados = await abrir(senha);
+    PED = dados.pedidos;
+    INICIO = dados.inicio ? ymd(dados.inicio) : "";
     montar();
-    $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
-    $("telaLogin").hidden = true; $("painel").hidden = false; $("barraF").hidden = false; $("btnSair").hidden = false; $("abas").hidden = false;
-    desenhar(); listaMan();
-  }
-    } catch (e) {
-      try { sessionStorage.removeItem("madu-senha"); } catch (x) {}
-      if (!silencioso) {
-        $("erro").textContent = MSG[e.message] || "Não foi possível abrir os dados (" + e.message + "). Rode “Atualizar pedidos e publicar” de novo.";
-        $("erro").hidden = false;
-      }
+
+    $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: TZ
+    });
+
+    $("telaLogin").hidden = true;
+    $("painel").hidden = false;
+    $("barraF").hidden = false;
+    $("btnSair").hidden = false;
+    $("abas").hidden = false;
+    desenhar();
+    listaMan();
+
+    try { sessionStorage.setItem("madu-senha", limpa(senha)); } catch (x) {}
+  } catch (e) {
+    try { sessionStorage.removeItem("madu-senha"); } catch (x) {}
+    if (!silencioso) {
+      $("erro").textContent = MSG[e.message] || "Não foi possível abrir os dados (" + e.message + "). Rode “Atualizar pedidos e publicar” de novo.";
+      $("erro").hidden = false;
     }
-    $("btnEntrar").disabled = false; $("btnEntrar").textContent = "Entrar";
+  } finally {
+    $("btnEntrar").disabled = false;
+    $("btnEntrar").textContent = "Entrar";
   }
+}
   $("form").addEventListener("submit", function (e) { e.preventDefault(); entrar($("senha").value, false); });
   try { var salva = sessionStorage.getItem("madu-senha"); if (salva) entrar(salva, true); } catch (x) {}
 })();
