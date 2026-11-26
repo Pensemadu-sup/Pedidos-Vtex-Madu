@@ -29,8 +29,11 @@
 })();
 </script>
 <style>
-:root{--laranja:#ffa028;--laranja-esc:#f08c0a;--lavanda:#8282c8;--lav-t:#4a4a8c;--tinta:#1d1d1f;--suave:#6e6e73;--fundo:#fff;--faixa:#f5f5f7;--card:#fff;--linha:rgba(0,0,0,.08);--glass:rgba(255,255,255,.72);--erro:#c9382f;--ok:#1a8a4a;--raio:28px;--ease:cubic-bezier(.2,.8,.2,1);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);color-scheme:light}
-html[data-tema="escuro"]{--lav-t:#b9b9f2;--tinta:#f5f5f7;--suave:#a1a1a6;--fundo:#000;--faixa:#1d1d1f;--card:#1c1c1e;--linha:rgba(255,255,255,.14);--glass:rgba(0,0,0,.72);--erro:#ff7a70;--ok:#4cd37b;color-scheme:dark}
+:root{--laranja:#ffa028;--laranja-esc:#f08c0a;--lavanda:#8282c8;--lav-t:#111;--tinta:#111;--suave:#3b2a10;--fundo:#ffa028;--faixa:#fff4e3;--card:#fff;--linha:rgba(0,0,0,.16);--glass:rgba(255,160,40,.8);--erro:#8f1d14;--ok:#0f6b36;--raio:28px;--ease:cubic-bezier(.2,.8,.2,1);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);color-scheme:light}
+html[data-tema="escuro"]{--lav-t:#b9b9f2;...;color-scheme:dark}
+html[data-tema="claro"] .marca,html[data-tema="claro"] .eyebrow{color:#111}
+html[data-tema="claro"] .btn:not(.sec){background:#111;border-color:#111;color:#fff}
+html[data-tema="claro"] .btn:not(.sec):hover{background:#000;border-color:#000}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html{scroll-behavior:smooth}
@@ -252,7 +255,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function tema(t, salvar) {
     var e = t === "escuro";
     raiz.setAttribute("data-tema", t);
-    document.querySelector('meta[name="theme-color"]').setAttribute("content", e ? "#000000" : "#ffffff");
+       document.querySelector('meta[name="theme-color"]').setAttribute("content", e ? "#000000" : "#ffa028");
     $("btnTema").setAttribute("aria-pressed", e ? "true" : "false");
     $("btnTema").setAttribute("aria-label", e ? "Desativar modo escuro" : "Ativar modo escuro");
     if (salvar) { try { localStorage.setItem("madu-tema", t); } catch (x) {} }
