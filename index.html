@@ -54,6 +54,7 @@ header{position:sticky;top:0;z-index:6;padding-top:var(--st)}
 .chip{flex:0 0 auto;min-height:40px;padding:0 20px;border:0;border-radius:999px;background:var(--faixa);font-size:.84rem;font-weight:600;cursor:pointer;transition:background .25s var(--ease),color .25s var(--ease),transform .25s var(--ease)}
 .chip:active{transform:scale(.96)}
 .chip[aria-pressed="true"]{background:var(--tinta);color:var(--fundo)}
+.filtros2{padding-top:0}.filtros2 .rot{font-size:.8rem;font-weight:600;color:var(--suave)}
 #per{display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--suave)}
 #per input,.busca{min-height:40px;padding:0 14px;border:1px solid var(--linha);border-radius:999px;background:var(--faixa);font-size:.84rem;font-weight:600}
 main{max-width:1180px;margin:0 auto;padding:0 24px 80px}
@@ -156,7 +157,14 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     <button type="button" class="chip" data-p="30" aria-pressed="false">30 dias</button>
     <button type="button" class="chip" data-p="tudo" aria-pressed="false">Tudo</button>
     <button type="button" class="chip" data-p="per" aria-pressed="false">Personalizado</button>
-    <span id="per" hidden><label>De <input type="date" id="de"></label><label>até <input type="date" id="ate"></label></span>
+      <span id="per" hidden><label>De <input type="date" id="de"></label><label>até <input type="date" id="ate"></label></span>
+  </div>
+  <div class="filtros filtros2" id="status" role="group" aria-label="Status dos pedidos">
+    <span class="rot">Mostrar:</span>
+    <button type="button" class="chip" data-s="pend" data-l="Pagamento pendente" aria-pressed="true">Pagamento pendente</button>
+    <button type="button" class="chip" data-s="janela" data-l="Janela de cancelamento" aria-pressed="true">Janela de cancelamento</button>
+    <button type="button" class="chip" data-s="canc" data-l="Cancelados" aria-pressed="false">Cancelados</button>
+    <button type="button" class="chip" data-s="inc" data-l="Incompletos" aria-pressed="false">Incompletos</button>
   </div>
 </div>
 
@@ -287,7 +295,9 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function plural(n, a, b) { return NUM.format(n) + " " + (n === 1 ? a : b); }
 
   var base = [], P = "mes", ORD = "qtd", MET = "v", MAIS = false, LIM = 15, BUSCA = "", MIN = "", LINHAS = [];
-  function valido(o) { return !FORA[o.status]; }
+   var GRUPO = { "canceled":"canc", "cancellation-requested":"canc", "incomplete":"inc", "payment-pending":"pend", "window-to-cancel":"janela" };
+  var VER = { canc:false, inc:false, pend:true, janela:true };
+  function valido(o) { var g = GRUPO[o.status]; return g ? VER[g] : true; }
   function resumo(L) {
     var f = 0, u = 0;
     L.forEach(function (o) { f += o.valor; o.itens.forEach(function (i) { u += i.qtd; }); });
@@ -370,7 +380,11 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function desenhar() {
     var iv = intervalo(), i = iv[0], f = iv[1], h = hoje();
     var T = base.filter(function (o) { return o.dia >= i && o.dia <= f; });
-    var L = T.filter(valido), R = resumo(L);
+     var L = T.filter(valido), R = resumo(L);
+    [].forEach.call($("status").querySelectorAll("button"), function (b) {
+      var n = T.filter(function (o) { return GRUPO[o.status] === b.dataset.s; }).length;
+      b.textContent = b.dataset.l + " (" + n + ")";
+    });
     var ant = anterior(i, f), RA = null;
     if (ant) RA = resumo(base.filter(function (o) { return o.dia >= ant[0] && o.dia <= ant[1] && valido(o); }));
     $("rotulo").textContent = (i === f ? br(i, 1) : br(i, 1) + " a " + br(f, 1)) + " · " + plural(L.length, "pedido", "pedidos");
@@ -433,11 +447,11 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     lista($("pagto"), agrupar(L, function (o) { return o.pagamento || "Sem informação"; }).slice(0, 6), function (l) { return BRL.format(l.v); }, pedsFmt, true);
     lista($("cupons"), agrupar(L, function (o) { return o.cupom; }).slice(0, 6), function (l) { return BRL.format(l.v); }, pedsFmt, true);
 
-    var fora = T.length - L.length, foraV = T.filter(function (o) { return !valido(o); }).reduce(function (s, o) { return s + o.valor; }, 0);
-    $("nota").textContent = "Faturamento = valor total do pedido (itens + frete − descontos). " + (fora ? plural(fora, "pedido cancelado ou incompleto ficou", "pedidos cancelados ou incompletos ficaram") + " de fora das contas (" + BRL.format(foraV) + "). " : "") +
-      "Pedidos aguardando pagamento entram nas contas. Os dados vêm da VTEX e não incluem nome, telefone nem e-mail dos clientes.";
-    T.sort(function (a, b) { return new Date(b.data) - new Date(a.data); });
-    LINHAS = T; LIM = 15; pedidos();
+       var fora = T.length - L.length, foraV = T.filter(function (o) { return !valido(o); }).reduce(function (s, o) { return s + o.valor; }, 0);
+    $("nota").textContent = "Faturamento = valor total do pedido (itens + frete − descontos). " + (fora ? plural(fora, "pedido ficou", "pedidos ficaram") + " de fora pelo filtro de status (" + BRL.format(foraV) + "). " : "") +
+      "Use os botões “Mostrar” para incluir ou tirar pedidos por status. Os dados vêm da VTEX e não incluem nome, telefone nem e-mail dos clientes.";
+       L.sort(function (a, b) { return new Date(b.data) - new Date(a.data); });
+    LINHAS = L; LIM = 15; pedidos();
   }
 
   function pedidos() {
@@ -451,7 +465,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
       var it = o.itens.map(function (x) { return "<li><span>" + x.qtd + "× " + esc(x.nome || x.ref) + "</span><b>" + BRL.format(x.qtd * x.preco) + "</b></li>"; }).join("");
       if (o.frete) it += "<li><span>Frete</span><b>" + BRL.format(o.frete) + "</b></li>";
       if (o.desconto) it += "<li><span>Descontos</span><b>− " + BRL.format(o.desconto) + "</b></li>";
-      return "<details class='ped" + (valido(o) ? "" : " canc") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + "<small>" + esc(o.pagamento || "—") + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
+      return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + "</small></span><span class='p2'>" + esc(o.estado || "—") + "<small>" + esc(o.pagamento || "—") + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
     }).join("") : "<p class='vazio'>Nenhum pedido encontrado.</p>";
     $("btnMais").hidden = R.length <= LIM;
     $("btnMais").textContent = "Mostrar mais (" + (R.length - LIM) + ")";
@@ -492,7 +506,13 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     if (P === "per" && !$("de").value) { $("de").value = soma(hoje(), -29); $("ate").value = hoje(); }
   });
   seg("metrica", function (b) { MET = b.dataset.m; });
-  seg("ordem", function (b) { ORD = b.dataset.o; });
+   seg("ordem", function (b) { ORD = b.dataset.o; });
+  $("status").addEventListener("click", function (e) {
+    var b = e.target.closest("button"); if (!b) return;
+    var s = b.dataset.s; VER[s] = !VER[s];
+    b.setAttribute("aria-pressed", VER[s] ? "true" : "false");
+    desenhar();
+  });
   $("de").addEventListener("change", desenhar); $("ate").addEventListener("change", desenhar);
   $("btnItens").addEventListener("click", function () { MAIS = !MAIS; desenhar(); });
   $("btnMais").addEventListener("click", function () { LIM += 15; pedidos(); });
