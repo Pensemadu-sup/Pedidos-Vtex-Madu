@@ -520,7 +520,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   $("btnCsv").addEventListener("click", csv);
 
     /* ===== Pedido manual ===== */
-  var PED = [], MAN = [], INICIO = "", SENHA = "";
+  var PED = [], MAN = [], INICIO = "", SENHA = "", EDIT = "";
   var REPO = "Pensemadu-sup/Pedidos-Vtex-Madu", ARQ = "data/manuais.enc.json";
   var MSGM = {
     "sem-token": "Cole primeiro o token do GitHub no quadro abaixo.",
@@ -586,7 +586,8 @@ sec.innerHTML = `
     <label>Descontos (R$)<input id="mDesc" inputmode="decimal" placeholder="0,00"></label>
   </div>
   <p class="proj" id="mTotal"></p>
-  <button class="btn" type="submit" id="mSalvar">Salvar pedido</button>
+   <button class="btn" type="submit" id="mSalvar">Salvar pedido</button>
+  <button class="btn sec" type="button" id="mCancela" hidden>Cancelar edição</button>
   <p class="erro" id="mMsg" role="alert" hidden></p>
 </form>
 <div class="bloco" id="mToken"></div>
@@ -604,6 +605,10 @@ sec.innerHTML = `
     var k = await chave(senha, b64(j.salt), "decrypt");
     return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64(j.iv) }, k, b64(j.dados))));
   }
+   async function decifrarAuto(j, senha) {
+    try { return await decifrar(j, senha); }
+    catch (e) { return await decifrar(j, ""); }
+  }
   async function cifrar(obj, senha) {
     var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
     var k = await chave(senha, salt, "encrypt");
@@ -614,7 +619,7 @@ sec.innerHTML = `
     var r = await fetch(url, { cache: "no-store" });
     if (r.status === 404) return null;
     if (!r.ok) throw new Error("rede");
-    return decifrar(await r.json(), senha);
+    return decifrarAuto(await r.json(), senha);
   }
 
   function tk() { try { return localStorage.getItem("madu-gh") || ""; } catch (x) { return ""; } }
@@ -633,7 +638,7 @@ sec.innerHTML = `
     if (r.status !== 404) {
       if (!r.ok) throw new Error("api " + r.status);
       var j = await r.json(); sha = j.sha;
-      try { lista = await decifrar(JSON.parse(atob(j.content.replace(/\s/g, ""))), SENHA); } catch (e) { throw new Error("senha"); }
+        try { lista = await decifrarAuto(JSON.parse(atob(j.content.replace(/\s/g, ""))), SENHA); } catch (e) { throw new Error("senha"); }
     }
     lista = mut(lista);
     var p = await gh("PUT", { message: msg, content: btoa(await cifrar(lista, SENHA)), sha: sha, branch: "main" });
@@ -657,6 +662,12 @@ function totalMan() {
   var dc = num($("mDesc").value || "0"); if (dc >= 0) t -= dc;
   $("mTotal").innerHTML = "Total do pedido: <b>" + BRL.format(Math.max(0, t)) + "</b> (itens + frete − descontos)";
 }
+    function sairEdicao() { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
+  function limpaForm() {
+    $("mItens").innerHTML = ""; linhaItem();
+    ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
+    $("mUF").value = ""; $("mStatus").value = "invoiced"; $("mHora").value = "12:00"; totalMan();
+  }
   function montar() {
     base = PED.concat(MAN).map(function (o) { o.dia = ymd(o.data); o.itens = o.itens || []; return o; });
     var m = base.reduce(function (a, o) { return !a || o.dia < a ? o.dia : a; }, "");
@@ -671,7 +682,7 @@ function totalMan() {
       if (o.cupom) info.push("Cupom " + o.cupom);
       return "<div class='ped'><div class='lin'><span><b>" + esc(o.id) + "</b><small>" + esc(info.join(" · ")) + "</small><small>" +
         esc(o.itens.map(function (x) { return x.qtd + "× " + x.nome; }).join(", ")) + "</small></span><span class='v'>" + BRL.format(o.valor) +
-        "<small>" + esc(STATUS[o.status] || o.status) + "</small></span><button type='button' class='btn sec peq' data-x='" + esc(o.id) + "'>Excluir</button></div></div>";
+        "<small>" + esc(STATUS[o.status] || o.status) +  "</span><span class='acoes'><button type='button' class='btn sec peq' data-e='" + esc(o.id) + "'>Editar</button><button type='button' class='btn sec peq' data-x='" + esc(o.id) + "'>Excluir</button></span></div></div>";;
     }).join("") : "<p class='vazio'>Nenhum pedido manual ainda.</p>";
   }
   function pintaToken() {
@@ -714,19 +725,38 @@ function totalMan() {
     var sub = itens.reduce(function (s, i) { return s + i.qtd * i.preco; }, 0);
     if (desc > sub + frete) { aviso("O desconto não pode ser maior que o total do pedido."); return; }
     var ped = {
-      id: "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T" + hora + ":00-03:00", status: status,
+           id: EDIT || "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T" + hora + ":00-03:00", status: status,
       valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, cupom: cupom, itens: itens
     };
     var btn = $("mSalvar"); btn.disabled = true; btn.textContent = "Salvando…";
     try {
-      MAN = await salvarMan(function (l) { return l.concat([ped]); }, "Pedido manual " + ped.id);
+      var edit = !!EDIT;
+      MAN = await salvarMan(function (l) { return edit ? l.map(function (o) { return o.id === ped.id ? ped : o; }) : l.concat([ped]); }, (edit ? "Edita pedido manual " : "Pedido manual ") + ped.id);
       montar(); desenhar(); listaMan();
-      $("mItens").innerHTML = ""; linhaItem();
-      ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
-      $("mUF").value = ""; $("mStatus").value = "invoiced"; totalMan();
-      aviso("Pedido salvo. Já aparece no painel; o site publicado atualiza em 1 a 2 minutos.", true);
+           sairEdicao(); limpaForm();
+      aviso((edit ? "Pedido atualizado" : "Pedido salvo") + ". Já aparece no painel; o site publicado atualiza em 1 a 2 minutos.", true);
     } catch (x) { aviso(MSGM[x.message] || "Não foi possível salvar (" + x.message + ")."); }
-    btn.disabled = false; btn.textContent = "Salvar pedido";
+       btn.disabled = false; btn.textContent = EDIT ? "Salvar alterações" : "Salvar pedido";
+  });
+  $("mCancela").addEventListener("click", function () { sairEdicao(); limpaForm(); $("mMsg").hidden = true; });
+  $("mLista").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-e]"); if (!b) return;
+    var o = MAN.filter(function (x) { return x.id === b.dataset.e; })[0]; if (!o) return;
+    $("abas").querySelector('[data-a="man"]').click();
+    EDIT = o.id;
+    $("mData").value = ymd(o.data);
+    $("mHora").value = new Date(o.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+    $("mStatus").value = o.status; $("mUF").value = o.estado || ""; $("mPag").value = o.pagamento || ""; $("mCupom").value = o.cupom || "";
+    $("mFrete").value = o.frete ? String(o.frete).replace(".", ",") : "";
+    $("mDesc").value = o.desconto ? String(o.desconto).replace(".", ",") : "";
+    $("mItens").innerHTML = "";
+    o.itens.forEach(function (it) {
+      linhaItem(); var r = $("mItens").lastChild;
+      r.querySelector(".in-n").value = it.nome; r.querySelector(".in-r").value = it.ref || "";
+      r.querySelector(".in-q").value = it.qtd; r.querySelector(".in-p").value = String(it.preco).replace(".", ",");
+    });
+    $("mSalvar").textContent = "Salvar alterações"; $("mCancela").hidden = false; $("mMsg").hidden = true;
+    totalMan(); window.scrollTo(0, 0);
   });
   $("mLista").addEventListener("click", async function (e) {
     var b = e.target.closest("button[data-x]"); if (!b || !confirm("Excluir este pedido manual?")) return;
@@ -756,9 +786,11 @@ function totalMan() {
   $("btnEntrar").textContent = "Abrindo…";
 
   try {
-    var dados = await abrir(senha);
+      var dados = await abrir(senha);
     PED = dados.pedidos;
     INICIO = dados.inicio ? ymd(dados.inicio) : "";
+    SENHA = limpa(senha);
+    try { MAN = (await lerCripto("data/manuais.enc.json?v=" + Date.now(), senha)) || []; } catch (x) { MAN = []; }
     montar();
 
     $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", {
