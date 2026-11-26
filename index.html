@@ -474,9 +474,9 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function csv() {
     function t(s) { s = String(s == null ? "" : s); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
     function n(v) { return (v || 0).toFixed(2).replace(".", ","); }
-    var l = ["Pedido;Data;Status;Estado;Pagamento;Cupom;Frete;Descontos;Valor;Itens"];
+     var l = ["Pedido;Data;Status;Estado;Pagamento;Parcelas;Cupom;Frete;Descontos;Valor;Itens"];
     pedidos.R.forEach(function (o) {
-      l.push([t(o.id), t(new Date(o.data).toLocaleString("pt-BR", { timeZone: TZ })), t(STATUS[o.status] || o.status), t(o.estado), t(o.pagamento), t(o.cupom), n(o.frete), n(o.desconto), n(o.valor),
+      l.push([t(o.id), t(new Date(o.data).toLocaleString("pt-BR", { timeZone: TZ })), t(STATUS[o.status] || o.status), t(o.estado), t(o.pagamento), (o.parcelas || 1), t(o.cupom), n(o.frete), n(o.desconto), n(o.valor),
         t(o.itens.map(function (x) { return x.qtd + "x " + (x.nome || x.ref); }).join(" | "))].join(";"));
     });
     var a = document.createElement("a");
