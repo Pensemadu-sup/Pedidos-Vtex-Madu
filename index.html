@@ -134,6 +134,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 .nota{margin:28px 0 0;padding:18px 22px;border-radius:20px;background:var(--faixa);font-size:.84rem;line-height:1.6;color:var(--suave)}
 @media(max-width:600px){.topo,main,.filtros{padding-left:16px;padding-right:16px}.atual{display:none}.tema{margin-left:auto}.sair+.tema{margin-left:0}.filtros{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.filtros::-webkit-scrollbar{display:none}.filtros .chip{padding:0 14px;font-size:.8rem}.filtros2{flex-wrap:wrap;overflow-x:visible}#barraF{position:static}main{padding-bottom:calc(96px + var(--sb))}.bloco,.meta{padding:20px}.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:16px}.kpi span{flex-wrap:wrap}.kpi b{font-size:1.25rem}.sem{gap:4px}.sem .dia{font-size:.66rem}.ped summary{grid-template-columns:1fr auto}.ped .p2{display:none}.kpi:hover{transform:none}input,select,.busca,#per input{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+  .rodape{max-width:1180px;margin:0 auto;padding:0 24px calc(32px + var(--sb));font-size:.75rem;font-weight:600;color:var(--suave);text-align:center}
 </style>
 </head>
 <body>
@@ -230,7 +231,20 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   </section>
 </main>
 <div class="tip" id="tip" hidden></div>
-
+<footer class="rodape" id="rodape" hidden></footer>
+<script>
+(function () {
+  fetch("versao.json?v=" + Date.now(), { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (v) {
+      if (!v) return;
+      var h = new Date(v.hora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
+      var el = document.getElementById("rodape");
+      el.textContent = "Versão " + v.n + " · " + h;
+      el.hidden = false;
+    }).catch(function () {});
+})();
+</script>
 <script>
 (function () {
   "use strict";
