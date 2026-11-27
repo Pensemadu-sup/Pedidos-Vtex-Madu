@@ -834,6 +834,7 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
     listaMan();
 
     try { sessionStorage.setItem("madu-senha", limpa(senha)); } catch (x) {}
+    setTimeout(checarAgora, 5000); setTimeout(checarAgora, 20000);
   } catch (e) {
     try { sessionStorage.removeItem("madu-senha"); } catch (x) {}
     if (!silencioso) {
@@ -910,7 +911,7 @@ clearTimeout(tAviso); if (!document.hidden) tAviso = setTimeout(function () { bo
         if (j.iv !== ULTIV) {
           ULTIV = j.iv;
           var d = await abrir(SENHA);
-          if (d.atualizado !== ULT) {
+          if (d.atualizado > ULT) {
             ULT = d.atualizado; PED = d.pedidos; INICIO = d.inicio ? ymd(d.inicio) : "";
             montar(); desenhar(); listaMan();
             $("atual").textContent = "Atualizado em " + new Date(d.atualizado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
@@ -922,7 +923,9 @@ clearTimeout(tAviso); if (!document.hidden) tAviso = setTimeout(function () { bo
     OCUPADO = false;
   }
   setInterval(checarAgora, 60000);
-
+document.addEventListener("visibilitychange", function () { if (!document.hidden) checarAgora(); });
+window.addEventListener("focus", checarAgora);
+window.addEventListener("online", checarAgora);
   if ("Notification" in window && Notification.permission === "default") {
     $("btnSair").insertAdjacentHTML("beforebegin", '<button type="button" class="sair" id="btnAvisos">🔔 Ativar avisos</button>');
     $("btnAvisos").onclick = function () { Notification.requestPermission().then(function () { $("btnAvisos").remove(); som(); }); };
