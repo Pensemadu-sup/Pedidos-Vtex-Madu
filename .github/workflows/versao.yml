@@ -1,0 +1,32 @@
+name: Versão do site
+on:
+  push:
+    branches: [main]
+    paths: [index.html]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: versao-site
+  cancel-in-progress: false
+jobs:
+  versao:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gerar versao.json
+        run: |
+          N=$(git rev-list --count HEAD -- index.html)
+          T=$(git log -1 --format=%cI -- index.html)
+          printf '{"n":%s,"hora":"%s"}\n' "$N" "$T" > versao.json
+      - name: Salvar
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add versao.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Atualiza versao.json"
+          git pull --rebase origin main
+          git push origin main
