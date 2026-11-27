@@ -842,7 +842,7 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
      localStorage.removeItem("madu-senha"); } catch (x) {} }
       $("erro").textContent = MSG[e.message] || "Não foi possível abrir os dados (" + e.message + "). Rode “Atualizar pedidos e publicar” de novo.";
       $("erro").hidden = false;
-    }
+    
   } finally {
     $("btnEntrar").disabled = false;
     $("btnEntrar").textContent = "Entrar";
