@@ -601,7 +601,21 @@ sec.innerHTML = `
     <label id="mParcL" hidden>Parcelas no cartão
     <select id="mParc"><option value="1">À vista (1x)</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option></select>
   </label>
-  <label>Cupom (opcional)<input id="mCupom" autocapitalize="characters" autocomplete="off" placeholder="Deixe vazio se não usou"></label>
+    <label>Cupom (opcional)<input id="mCupom" autocapitalize="characters" autocomplete="off" placeholder="Deixe vazio se não usou"></label>
+  <label>Cliente<input id="mCli" autocomplete="off" placeholder="Nome do cliente"></label>
+  <div class="man2">
+    <label>Tipo de documento<select id="mTipoDoc"><option value="CPF">CPF</option><option value="CNPJ">CNPJ</option></select></label>
+    <label>Documento<input id="mDoc" inputmode="numeric" autocomplete="off" placeholder="Somente números"></label>
+  </div>
+  <div class="man2">
+    <label>Telefone<input id="mTel" type="tel" autocomplete="off" placeholder="(41) 99999-9999"></label>
+    <label>E-mail<input id="mEmail" type="email" autocomplete="off" placeholder="cliente@email.com"></label>
+  </div>
+  <div class="man2">
+    <label>Envio<input id="mEnvio" autocomplete="off" placeholder="Ex.: Sedex, Retirada"></label>
+    <label>Transportadora<input id="mTransp" autocomplete="off" placeholder="Ex.: Correios"></label>
+  </div>
+  <label>Entrega estimada<input type="date" id="mEntrega"></label>
   <div class="man" id="mItens"></div>
   <button type="button" class="btn sec" id="mAdd">+ Adicionar item</button>
   <div class="man2">
@@ -691,7 +705,8 @@ function totalMan() {
     function sairEdicao() { EDIT = ""; $("mSalvar").textContent = "Salvar pedido"; $("mCancela").hidden = true; }
   function limpaForm() {
     $("mItens").innerHTML = ""; linhaItem();
-    ["mFrete", "mDesc", "mCupom", "mPag"].forEach(function (id) { $(id).value = ""; });
+       ["mFrete", "mDesc", "mCupom", "mPag", "mCli", "mDoc", "mTel", "mEmail", "mEnvio", "mTransp", "mEntrega"].forEach(function (id) { $(id).value = ""; });
+    $("mTipoDoc").value = "CPF";
      $("mUF").value = ""; $("mStatus").value = "invoiced"; $("mHora").value = "12:00"; $("mParc").value = "1"; parcCampo(); totalMan();
   }
   function montar() {
@@ -745,7 +760,8 @@ function totalMan() {
     });
     var frete = $("mFrete").value.trim() ? cent(num($("mFrete").value)) : 0;
     var desc = $("mDesc").value.trim() ? cent(num($("mDesc").value)) : 0;
-    var uf = $("mUF").value, pag = $("mPag").value.trim(), cupom = $("mCupom").value.trim(), status = $("mStatus").value;
+     var uf = $("mUF").value, pag = $("mPag").value.trim(), cupom = $("mCupom").value.trim(), status = $("mStatus").value;
+    var ent = $("mEntrega").value;
     if (!data || !uf || !pag || !itens.length || !(frete >= 0) || !(desc >= 0) || itens.some(function (i) { return !i.nome || !(i.qtd > 0) || !(i.preco >= 0); })) {
       aviso("Preencha data, estado, forma de pagamento e, em cada item, nome, quantidade e valor unitário."); return;
     }
@@ -753,7 +769,10 @@ function totalMan() {
     if (desc > sub + frete) { aviso("O desconto não pode ser maior que o total do pedido."); return; }
     var ped = {
            id: EDIT || "MANUAL-" + Date.now().toString(36).toUpperCase(), data: data + "T" + hora + ":00-03:00", status: status,
-           valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, parcelas: ehCartao(pag) ? (parseInt($("mParc").value, 10) || 1) : 1, cupom: cupom, itens: itens
+           valor: cent(sub + frete - desc), frete: frete, desconto: desc, estado: uf, pagamento: pag, parcelas: ehCartao(pag) ? (parseInt($("mParc").value, 10) || 1) : 1, cupom: cupom, itens: itens,
+           cliente: $("mCli").value.trim(), tipoDoc: $("mTipoDoc").value, documento: $("mDoc").value.trim(),
+           telefone: $("mTel").value.trim(), email: $("mEmail").value.trim(), envio: $("mEnvio").value.trim(),
+           transportadora: $("mTransp").value.trim(), entrega: ent ? ent + "T12:00:00-03:00" : ""
     };
     var btn = $("mSalvar"); btn.disabled = true; btn.textContent = "Salvando…";
     try {
@@ -774,7 +793,10 @@ function totalMan() {
     $("mData").value = ymd(o.data);
     $("mHora").value = new Date(o.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
        $("mStatus").value = o.status; $("mUF").value = o.estado || ""; $("mPag").value = o.pagamento || ""; $("mCupom").value = o.cupom || "";
-    parcCampo(); $("mParc").value = String(o.parcelas || 1);
+       parcCampo(); $("mParc").value = String(o.parcelas || 1);
+    $("mCli").value = o.cliente || ""; $("mTipoDoc").value = o.tipoDoc || "CPF"; $("mDoc").value = o.documento || "";
+    $("mTel").value = o.telefone || ""; $("mEmail").value = o.email || ""; $("mEnvio").value = o.envio || "";
+    $("mTransp").value = o.transportadora || ""; $("mEntrega").value = o.entrega ? ymd(o.entrega) : "";
     $("mFrete").value = o.frete ? String(o.frete).replace(".", ",") : "";
     $("mDesc").value = o.desconto ? String(o.desconto).replace(".", ",") : "";
     $("mItens").innerHTML = "";
