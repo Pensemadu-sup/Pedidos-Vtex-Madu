@@ -29,9 +29,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
-        - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
-        fetch-depth: 0
+          fetch-depth: 0
 
       - uses: actions/setup-node@v5
         with:
@@ -47,7 +47,7 @@ jobs:
 
       - name: Montar o site
         run: |
-                    mkdir -p site
+          mkdir -p site
           cp index.html site/
           cp -r data site/
           for f in manifest.json pwa-register.js sw.js; do
@@ -57,7 +57,7 @@ jobs:
           N=$(git rev-list --count HEAD -- index.html)
           T=$(git log -1 --format=%cI -- index.html)
           printf '{"n":%s,"hora":"%s"}\n' "$N" "$T" > site/versao.json
-          
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4
@@ -76,7 +76,7 @@ jobs:
       - name: Publicar no GitHub Pages (2ª tentativa)
         if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
-        
+
       - name: Avisar pedido novo no ntfy
         if: success() && hashFiles('aviso.json') != ''
         continue-on-error: true
