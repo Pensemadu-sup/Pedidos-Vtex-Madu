@@ -798,7 +798,7 @@ function totalMan() {
   $("btnEntrar").textContent = "Abrindo…";
 
   try {
-      var dados = await abrir(senha);
+var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedidos);
     PED = dados.pedidos;
     INICIO = dados.inicio ? ymd(dados.inicio) : "";
     SENHA = limpa(senha);
@@ -833,6 +833,80 @@ function totalMan() {
 }
   $("form").addEventListener("submit", function (e) { e.preventDefault(); entrar($("senha").value, false); });
   try { var salva = sessionStorage.getItem("madu-senha"); if (salva) entrar(salva, true); } catch (x) {}
+    /* ===== Aviso de pedido novo ===== */
+  var VISTOS = lerVistos(), ULT = "", OCUPADO = false, tAviso;
+  function lerVistos() { try { var s = localStorage.getItem("madu-vistos"); return s ? JSON.parse(s) : null; } catch (x) { return null; } }
+  function salvarVistos() { try { localStorage.setItem("madu-vistos", JSON.stringify(VISTOS.slice(-3000))); } catch (x) {} }
+
+  var cssAviso = document.createElement("style");
+  cssAviso.textContent = ".aviso{position:fixed;top:calc(16px + var(--st));left:50%;transform:translate(-50%,-170%);z-index:50;width:min(92vw,420px);padding:18px 22px;border-radius:24px;background:var(--bt);color:var(--bt-t);box-shadow:0 30px 60px -20px rgba(0,0,0,.5);cursor:pointer;transition:transform .6s var(--ease)}.aviso.on{transform:translate(-50%,0)}.aviso b{display:block;font-size:1.15rem;font-weight:900}.aviso span{display:block;margin-top:4px;font-size:.9rem;font-weight:600}.aviso small{display:block;margin-top:2px;font-size:.78rem;opacity:.75}";
+  document.head.appendChild(cssAviso);
+  var boxAviso = document.createElement("div");
+  boxAviso.className = "aviso"; boxAviso.setAttribute("role", "status"); boxAviso.setAttribute("aria-live", "polite");
+  document.body.appendChild(boxAviso);
+  boxAviso.addEventListener("click", function () { boxAviso.classList.remove("on"); });
+
+  function som() {
+    try {
+      var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      var c = new C();
+      [660, 880].forEach(function (f, i) {
+        var o = c.createOscillator(), g = c.createGain(), t = c.currentTime + i * 0.16;
+        o.type = "sine"; o.frequency.value = f; o.connect(g); g.connect(c.destination);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.15, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        o.start(t); o.stop(t + 0.32);
+      });
+    } catch (x) {}
+  }
+  function sistema(t, c) {
+    try {
+      if (!("Notification" in window) || Notification.permission !== "granted" || !document.hidden) return;
+      var op = { body: c, icon: "icons/apple-touch-icon.png", tag: "madu-pedido" };
+      if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(function (r) { if (r) r.showNotification(t, op); else new Notification(t, op); }).catch(function () {});
+      else new Notification(t, op);
+    } catch (x) {}
+  }
+  function mostrarAviso(L) {
+    var n = L.length, total = L.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+    var l2 = n === 1 ? "Caiu um pedido novo!" : "Caíram " + n + " pedidos novos!";
+    var l3 = plural(n, "venda", "vendas") + " · " + BRL.format(total);
+    var det = n === 1 ? [L[0].estado, L[0].pagamento].filter(Boolean).join(" · ") : "";
+    boxAviso.innerHTML = "<b>🎉 Pedido novo no site!</b><span>" + esc(l2) + "</span><span>" + esc(l3) + "</span>" + (det ? "<small>" + esc(det) + "</small>" : "");
+    boxAviso.classList.add("on");
+clearTimeout(tAviso); if (!document.hidden) tAviso = setTimeout(function () { boxAviso.classList.remove("on"); }, 10000);
+    som(); sistema("Pedido novo no site!", l2 + " " + l3);
+  }
+  function avisarNovos(lista) {
+    var validos = lista.filter(function (o) { return !FORA[o.status]; });
+    if (!VISTOS) { VISTOS = validos.map(function (o) { return o.id; }); salvarVistos(); return; }
+    var set = {}; VISTOS.forEach(function (i) { set[i] = 1; });
+    var novos = validos.filter(function (o) { return !set[o.id]; });
+    if (!novos.length) return;
+    VISTOS = VISTOS.concat(novos.map(function (o) { return o.id; })); salvarVistos();
+    mostrarAviso(novos);
+  }
+  async function checarAgora() {
+    if (!SENHA || OCUPADO) return;
+    OCUPADO = true;
+    try {
+      var d = await abrir(SENHA);
+      if (d.atualizado !== ULT) {
+        ULT = d.atualizado; PED = d.pedidos; INICIO = d.inicio ? ymd(d.inicio) : "";
+        montar(); desenhar(); listaMan();
+        $("atual").textContent = "Atualizado em " + new Date(d.atualizado).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
+        avisarNovos(PED);
+      }
+    } catch (x) {}
+    OCUPADO = false;
+  }
+  setInterval(checarAgora, 60000);
+
+  if ("Notification" in window && Notification.permission === "default") {
+    $("btnSair").insertAdjacentHTML("beforebegin", '<button type="button" class="sair" id="btnAvisos">🔔 Ativar avisos</button>');
+    $("btnAvisos").onclick = function () { Notification.requestPermission().then(function () { $("btnAvisos").remove(); som(); }); };
+  }
+  window.maduTeste = function () { mostrarAviso([{ valor: 1430.23, estado: "PR", pagamento: "Pix" }]); };
+  /* ===== fim do aviso de pedido novo ===== */
 })();
 </script>
 <script>
