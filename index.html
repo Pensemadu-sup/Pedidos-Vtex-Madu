@@ -898,6 +898,7 @@ clearTimeout(tAviso); if (!document.hidden) tAviso = setTimeout(function () { bo
     if (!novos.length) return;
     VISTOS = VISTOS.concat(novos.map(function (o) { return o.id; })); salvarVistos();
     mostrarAviso(novos);
+  }
   var ULTIV = "";
   async function checarAgora() {
     if (!SENHA || !ULT || OCUPADO) return;
