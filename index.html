@@ -33,8 +33,8 @@
 html[data-tema="escuro"]{--lav-t:#b9b9f2;--tinta:#f5f5f7;--suave:#a1a1a6;--fundo:#000;--faixa:#1d1d1f;--card:#1c1c1e;--linha:rgba(255,255,255,.14);--glass:rgba(0,0,0,.72);--erro:#ff7a70;--ok:#4cd37b;--marca:#ffa028;--sobre:#000;--bt:#ffa028;--bt-t:#1d1d1f;--bt-h:#f08c0a;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-html{scroll-behavior:smooth}
-body{margin:0;min-height:100vh;overflow-x:clip;background:var(--fundo);color:var(--tinta);font-family:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth;overflow-x:hidden;overscroll-behavior-x:none}
+  body{margin:0;min-height:100vh;overflow-x:clip;touch-action:pan-y pinch-zoom;background:var(--fundo);color:var(--tinta);font-family:"Poppins",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:3px solid var(--lav-t);outline-offset:3px}
 .glass{background:var(--glass);-webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--linha)}
@@ -111,8 +111,8 @@ svg.graf .hit{fill:transparent}svg.graf .hit:hover+.bar,svg.graf g:hover .bar{fi
 svg.graf .media{fill:none;stroke:var(--lav-t);stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 .tip{position:fixed;z-index:20;pointer-events:none;transform:translate(-50%,-135%);padding:8px 14px;border-radius:14px;background:rgba(29,29,31,.9);color:#fff;font-size:.78rem;font-weight:600;white-space:nowrap;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.sem{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end}
-.sem .dia{display:grid;grid-template-rows:auto 150px auto auto;gap:6px;justify-items:center;text-align:center;font-size:.74rem;color:var(--suave)}
+.sem{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;align-items:end}
+  .sem .dia{display:grid;grid-template-rows:auto 150px auto auto;gap:6px;justify-items:center;text-align:center;font-size:.74rem;color:var(--suave)}
 .sem .dia b{font-size:.78rem;color:var(--tinta);font-weight:600}
 .sem .col{display:flex;align-items:flex-end;width:100%;height:150px}
 .sem .col i{display:block;width:100%;height:var(--h);min-height:3px;border-radius:12px 12px 6px 6px;background:var(--faixa);border:1px solid var(--linha);transform-origin:bottom;animation:sobe .9s var(--ease) both}
@@ -132,7 +132,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 .ped ul{margin:0;padding:0 18px 16px;list-style:none;display:grid;gap:6px;font-size:.82rem;color:var(--suave)}
 .ped ul li{display:flex;justify-content:space-between;gap:12px}.ped ul b{color:var(--tinta);font-weight:600}
 .nota{margin:28px 0 0;padding:18px 22px;border-radius:20px;background:var(--faixa);font-size:.84rem;line-height:1.6;color:var(--suave)}
-@media(max-width:600px){.topo,main,.filtros{padding-left:16px;padding-right:16px}.atual{display:none}.tema{margin-left:auto}.sair+.tema{margin-left:0}.filtros{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.filtros::-webkit-scrollbar{display:none}.filtros .chip{padding:0 14px;font-size:.8rem}.filtros2{flex-wrap:wrap;overflow-x:visible}#barraF{position:static}main{padding-bottom:calc(96px + var(--sb))}.bloco,.meta{padding:20px}.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:16px}.kpi span{flex-wrap:wrap}.kpi b{font-size:1.25rem}.sem{gap:4px}.sem .dia{font-size:.66rem}.ped summary{grid-template-columns:1fr auto}.ped .p2{display:none}.kpi:hover{transform:none}input,select,.busca,#per input{font-size:16px}}
+@media(max-width:600px){.topo,main,.filtros{padding-left:16px;padding-right:16px}.atual{display:none}.tema{margin-left:auto}.sair+.tema{margin-left:0}.filtros{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.filtros::-webkit-scrollbar{display:none}.filtros .chip{padding:0 14px;font-size:.8rem}.filtros2{flex-wrap:wrap;overflow-x:visible}#barraF{position:static}main{padding-bottom:calc(96px + var(--sb))}.bloco,.meta{padding:20px}.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:16px}.kpi span{flex-wrap:wrap}.kpi b{font-size:1.25rem}.sem{gap:4px}.sem .dia{font-size:.66rem}.sem .dia b{font-size:.6rem;overflow-wrap:anywhere;line-height:1.2}.ped summary{grid-template-columns:1fr auto}.ped .p2{display:none}.kpi:hover{transform:none}input,select,.busca,#per input{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
   .rodape{max-width:1180px;margin:0 auto;padding:0 24px calc(32px + var(--sb));font-size:.75rem;font-weight:600;color:var(--suave);text-align:center}
 </style>
@@ -436,7 +436,7 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     var med = sf.map(function (v, w) { return occ[w] ? v / occ[w] : 0; }), mm = Math.max.apply(null, med), best = med.indexOf(mm);
     if (!L.length) $("semana").innerHTML = "<p class='vazio'>Sem pedidos neste período.</p>";
     else $("semana").innerHTML = "<div class='sem'>" + [1,2,3,4,5,6,0].map(function (w) {
-      return "<div class='dia" + (w === best && mm > 0 ? " top" : "") + "'><b>" + CMP.format(med[w]) + "</b><div class='col'><i style='--h:" + (mm ? med[w] / mm * 100 : 0).toFixed(1) + "%'></i></div><span>" + SEMANA[w].slice(0, 3) + "</span><small>" + sn[w] + " ped.</small></div>";
+      return "<div class='dia" + (w === best && mm > 0 ? " top" : "") + "'><b>" + CMP.format(med[w]).replace("R$", "").trim() + "</b><div class='col'><i style='--h:" + (mm ? med[w] / mm * 100 : 0).toFixed(1) + "%'></i></div><span>" + SEMANA[w].slice(0, 3) + "</span><small>" + sn[w] + " ped.</small></div>";
     }).join("") + "</div><p class='leg'>Média de faturamento por dia. " + (mm > 0 ? "Melhor dia da semana: <b>" + SEMANA[best] + "</b>, com ticket médio de <b>" + BRL.format(sn[best] ? sf[best] / sn[best] : 0) + "</b>." : "") + "</p>";
 
     /* melhores dias */
