@@ -47,10 +47,17 @@ jobs:
 
       - name: Montar o site
         run: |
-          mkdir -p site
+                    mkdir -p site
           cp index.html site/
           cp -r data site/
-
+          for f in manifest.json pwa-register.js sw.js; do
+            if [ -f "$f" ]; then cp "$f" site/; fi
+          done
+          if [ -d icons ]; then cp -r icons site/; fi
+          N=$(git rev-list --count HEAD -- index.html)
+          T=$(git log -1 --format=%cI -- index.html)
+          printf '{"n":%s,"hora":"%s"}\n' "$N" "$T" > site/versao.json
+          
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v4
@@ -69,3 +76,14 @@ jobs:
       - name: Publicar no GitHub Pages (2ª tentativa)
         if: steps.deploy.outcome == 'failure'
         uses: actions/deploy-pages@v4
+        
+      - name: Avisar pedido novo no ntfy
+        if: success() && hashFiles('aviso.json') != ''
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$NTFY_TOPIC" ]; then echo "NTFY_TOPIC não configurado"; exit 0; fi
+          jq -n --arg topic "$NTFY_TOPIC" --slurpfile a aviso.json \
+            '{topic:$topic,title:$a[0].titulo,message:$a[0].mensagem,tags:["tada"],click:"https://pensemadu-sup.github.io/Pedidos-Vtex-Madu/"}' \
+            | curl -sS -f -H "Content-Type: application/json" -d @- https://ntfy.sh
