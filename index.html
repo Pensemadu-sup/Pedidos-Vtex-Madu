@@ -806,7 +806,7 @@ function totalMan() {
   $("dias").addEventListener("mouseleave", function () { tip.hidden = true; });
   window.addEventListener("scroll", function () { tip.hidden = true; }, { passive: true });
 
-  $("btnSair").addEventListener("click", function () { try { sessionStorage.removeItem("madu-senha"); } catch (x) {} location.reload(); });
+  $("btnSair").addEventListener("click", function () { try { localStorage.removeItem("madu-senha"); } catch (x) {} location.reload(); });
 
   async function entrar(senha, silencioso) {
   $("erro").hidden = true;
@@ -835,11 +835,11 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
     desenhar();
     listaMan();
 
-    try { sessionStorage.setItem("madu-senha", limpa(senha)); } catch (x) {}
+    try { localStorage.setItem("madu-senha", limpa(senha)); } catch (x) {}
     setTimeout(checarAgora, 5000); setTimeout(checarAgora, 20000);
   } catch (e) {
-    try { sessionStorage.removeItem("madu-senha"); } catch (x) {}
-    if (!silencioso) {
+   if (e.message === "senha") { try { 
+     localStorage.removeItem("madu-senha"); } catch (x) {} }
       $("erro").textContent = MSG[e.message] || "Não foi possível abrir os dados (" + e.message + "). Rode “Atualizar pedidos e publicar” de novo.";
       $("erro").hidden = false;
     }
@@ -849,7 +849,7 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
   }
 }
   $("form").addEventListener("submit", function (e) { e.preventDefault(); entrar($("senha").value, false); });
-  try { var salva = sessionStorage.getItem("madu-senha"); if (salva) entrar(salva, true); } catch (x) {}
+  try { var salva = localStorage.getItem("madu-senha"); if (salva) entrar(salva, true); } catch (x) {}
     /* ===== Aviso de pedido novo ===== */
   var VISTOS = lerVistos(), ULT = "", OCUPADO = false, tAviso;
   function lerVistos() { try { var s = localStorage.getItem("madu-vistos"); return s ? JSON.parse(s) : null; } catch (x) { return null; } }
