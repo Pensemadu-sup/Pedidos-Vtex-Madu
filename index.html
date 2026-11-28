@@ -471,14 +471,21 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function pedidos() {
     var q = BUSCA.trim().toLowerCase();
     var R = LINHAS.filter(function (o) {
-      return !q || (o.id + " " + o.estado + " " + o.pagamento + " " + o.cupom + " " + (o.cliente || "") + " " + (o.documento || "") + " " + (o.telefone || "") + " " + (o.transportadora || "") + " " + (STATUS[o.status] || o.status) + " " + o.itens.map(function (x) { return x.nome + " " + x.ref; }).join(" ")).toLowerCase().indexOf(q) > -1;
+      return !q || (o.id + " " + o.estado + " " + o.pagamento + " " + o.cupom + " " + (o.cliente || "") + " " + (o.documento || "") + " " + (o.razaoSocial || "") + " " + (o.nomeFantasia || "") + " " + (o.ie || "") + " " + (o.cep || "") + " " + (o.rua || "") + " " + (o.cidade || "") + " " + (o.pagarmeId || "") + " " + (o.neo || "") + " " + (o.telefone || "") + " " + (o.transportadora || "") + " " + (STATUS[o.status] || o.status) + " " + o.itens.map(function (x) { return x.nome + " " + x.ref; }).join(" ")).toLowerCase().indexOf(q) > -1;
     });
     pedidos.R = R;
     $("peds").innerHTML = R.length ? R.slice(0, LIM).map(function (o) {
       var data = new Date(o.data).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
       var it = o.itens.map(function (x) { return "<li><span>" + x.qtd + "× " + esc(x.nome || x.ref) + "</span><b>" + BRL.format(x.qtd * x.preco) + "</b></li>"; }).join("");
       var li = function (r, v) { return v ? "<li><span>" + r + "</span><b>" + esc(v) + "</b></li>" : ""; };
-it += li("Cliente", o.cliente) + li(o.tipoDoc || "Documento", o.documento) + li("Telefone", o.telefone) + li("E-mail", o.email) + li("Envio", o.envio) + li("Transportadora", o.transportadora) + li("Entrega estimada", o.entrega ? br(ymd(o.entrega), 1) : "");
+var cnpj = o.tipoDoc === "CNPJ";
+it += (cnpj
+  ? li("Razão social", o.razaoSocial) + li("Nome fantasia", o.nomeFantasia) + li("CNPJ", o.documento) + li("Inscrição estadual", o.ie) + li("Nome do cliente", o.cliente)
+  : li("Cliente", o.cliente) + li(o.tipoDoc || "CPF", o.documento))
+  + li("Telefone", o.telefone) + li("E-mail", o.email)
+  + li("CEP", o.cep) + li("Rua", o.rua) + li("Número", o.numero) + li("Complemento", o.complemento) + li("Bairro", o.bairro) + li("Cidade", o.cidade)
+  + li("Envio", o.envio) + li("Transportadora", o.transportadora) + li("Entrega estimada", o.entrega ? br(ymd(o.entrega), 1) : "")
+  + li("ID Pagar.me", o.pagarmeId);
       if (o.frete) it += "<li><span>Frete</span><b>" + BRL.format(o.frete) + "</b></li>";
       if (o.desconto) it += "<li><span>Descontos</span><b>− " + BRL.format(o.desconto) + "</b></li>";
       return "<details class='ped" + (FORA[o.status] ? " canc" : "") + "'><summary><span><b>" + esc(o.id) + "</b><small>" + data + (o.cliente ? " · " + esc(o.cliente) : "") + "</small></span><span class='p2'>" + esc(o.estado || "—") + "<small>" + esc((o.pagamento || "—") + (o.parcelas > 1 ? " em " + o.parcelas + "x" : "")) + "</small></span><span class='v'>" + BRL.format(o.valor) + "<small>" + esc(STATUS[o.status] || o.status) + "</small></span></summary><ul>" + it + "</ul></details>";
@@ -490,10 +497,10 @@ it += li("Cliente", o.cliente) + li(o.tipoDoc || "Documento", o.documento) + li(
   function csv() {
     function t(s) { s = String(s == null ? "" : s); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
     function n(v) { return (v || 0).toFixed(2).replace(".", ","); }
-     var l = ["Pedido;Data;Status;Estado;Pagamento;Parcelas;Cupom;Frete;Descontos;Valor;Itens;Cliente;Documento;Telefone;E-mail;Envio;Transportadora;Entrega estimada"];
+     var l = ["Pedido;Data;Status;Estado;Pagamento;Parcelas;Cupom;Frete;Descontos;Valor;Itens;Cliente;Documento;Telefone;E-mail;Envio;Transportadora;Entrega estimada;Razão social;Nome fantasia;IE;CEP;Rua;Número;Complemento;Bairro;Cidade;ID Pagar.me;Pedido NEO"];
     pedidos.R.forEach(function (o) {
       l.push([t(o.id), t(new Date(o.data).toLocaleString("pt-BR", { timeZone: TZ })), t(STATUS[o.status] || o.status), t(o.estado), t(o.pagamento), (o.parcelas || 1), t(o.cupom), n(o.frete), n(o.desconto), n(o.valor),
-        t(o.itens.map(function (x) { return x.qtd + "x " + (x.nome || x.ref); }).join(" | ")), t(o.cliente), t(o.documento), t(o.telefone), t(o.email), t(o.envio), t(o.transportadora), t(o.entrega ? br(ymd(o.entrega), 1) : "")].join(";"));
+        t(o.itens.map(function (x) { return x.qtd + "x " + (x.nome || x.ref); }).join(" | ")), t(o.cliente), t(o.documento), t(o.telefone), t(o.email), t(o.envio), t(o.transportadora), t(o.entrega ? br(ymd(o.entrega), 1) : ""), t(o.razaoSocial), t(o.nomeFantasia), t(o.ie), t(o.cep), t(o.rua), t(o.numero), t(o.complemento), t(o.bairro), t(o.cidade), t(o.pagarmeId), t(o.neo)].join(";"));
     });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + l.join("\r\n")], { type: "text/csv;charset=utf-8" }));
