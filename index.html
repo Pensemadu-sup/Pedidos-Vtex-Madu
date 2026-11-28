@@ -392,31 +392,96 @@ var METAS = { "2026-11": [25000, 0, 65000] };
   var METASB = {};
   function metasDe(k) { return METASB[k] || METAS[k] || null; }
 
-  function fogos() {
+   function fogos() {
+    var cores = ["#ffa028", "#ffd166", "#ff5d8f", "#8282c8", "#4cd37b", "#ffffff", "#4dc3ff"];
+    var cor = function () { return cores[Math.random() * cores.length | 0]; };
+
+    /* popup de festa */
+    if (!$("cssFesta")) {
+      var s = document.createElement("style"); s.id = "cssFesta";
+      s.textContent = "#festa{position:fixed;left:50%;top:50%;z-index:61;transform:translate(-50%,-50%) scale(.2);opacity:0;width:min(92vw,460px);text-align:center;padding:34px 26px;border-radius:32px;background:linear-gradient(135deg,#ffa028,#ff5d8f);color:#fff;box-shadow:0 40px 90px -20px rgba(0,0,0,.6),0 0 0 6px rgba(255,255,255,.35);cursor:pointer;animation:festaIn .7s cubic-bezier(.2,1.4,.3,1) forwards}" +
+        "@keyframes festaIn{to{transform:translate(-50%,-50%) scale(1);opacity:1}}" +
+        "#festa .e{font-size:2.6rem;letter-spacing:.1em;animation:festaPula 1s ease-in-out infinite}" +
+        "@keyframes festaPula{50%{transform:translateY(-10px) scale(1.12)}}" +
+        "#festa h2{margin:10px 0 6px;font-size:clamp(2rem,9vw,3rem);font-weight:900;letter-spacing:-.03em;line-height:1.05;text-shadow:0 4px 18px rgba(0,0,0,.25)}" +
+        "#festa p{margin:0;font-size:1.05rem;font-weight:600}" +
+        "#festa small{display:block;margin-top:14px;font-size:.75rem;opacity:.85}" +
+        "#festa.sai{animation:festaOut .4s ease forwards}" +
+        "@keyframes festaOut{to{transform:translate(-50%,-50%) scale(.6);opacity:0}}";
+      document.head.appendChild(s);
+    }
+    var velho = $("festa"); if (velho) velho.remove();
+    var pop = document.createElement("div");
+    pop.id = "festa"; pop.setAttribute("role", "status");
+    pop.innerHTML = "<div class='e'>🎆🎉🥳🎉🎆</div><h2>META BATIDA!</h2><p>Parabéns, time MAD.U! Vocês arrasaram! 🚀🔥</p><small>Toque para fechar</small>";
+    document.body.appendChild(pop);
+    var fecha = function () { if (!pop.parentNode) return; pop.classList.add("sai"); setTimeout(function () { pop.remove(); }, 400); };
+    pop.addEventListener("click", fecha);
+    setTimeout(fecha, 12000);
+    som(); setTimeout(som, 500); setTimeout(som, 1000);
+
     if (reduz) return;
+
+    /* fogos e confete */
     var c = document.createElement("canvas");
     c.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none";
     document.body.appendChild(c);
-    var x = c.getContext("2d"), W = c.width = innerWidth, H = c.height = innerHeight, ps = [], t0 = performance.now(), prox = 0;
-    var cores = ["#ffa028", "#ffd166", "#ff5d8f", "#8282c8", "#4cd37b", "#ffffff"];
-    function explode() {
-      var cx = W * (.15 + Math.random() * .7), cy = H * (.12 + Math.random() * .4), cor = cores[Math.random() * cores.length | 0];
-      for (var i = 0; i < 70; i++) { var a = Math.random() * 6.283, s = 1.5 + Math.random() * 4.5; ps.push({ x: cx, y: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, c: cor }); }
+    var W = c.width = innerWidth, H = c.height = innerHeight, x = c.getContext("2d");
+    var ps = [], fg = [], cf = [], t0 = performance.now(), proxF = 0, proxC = 0, DUR = 10000, g = .12;
+
+    function estoura(cx, cy, cc) {
+      var n = 90 + (Math.random() * 60 | 0), anel = Math.random() < .35, c2 = cor();
+      for (var i = 0; i < n; i++) {
+        var a = Math.random() * 6.283, s = anel ? 5 : 1.5 + Math.random() * 5.5;
+        ps.push({ x: cx, y: cy, lx: cx, ly: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, d: .008 + Math.random() * .01, c: anel && i % 2 ? c2 : cc, w: 1.5 + Math.random() * 1.5 });
+      }
     }
+    function foguete(xx) {
+      var alvo = H * (.12 + Math.random() * .35), vy = -Math.sqrt(2 * g * (H - alvo));
+      fg.push({ x: xx, y: H, lx: xx, ly: H, vx: (Math.random() - .5) * 2, vy: vy, c: cor() });
+    }
+    function confete() {
+      cf.push({ x: Math.random() * W, y: -12, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, r: Math.random() * 6, vr: (Math.random() - .5) * .3, w: 6 + Math.random() * 6, h: 4 + Math.random() * 5, c: cor() });
+    }
+    for (var i = 0; i < 6; i++) foguete(W * (.1 + i * .16));
+
     (function quadro(t) {
       var dt = t - t0;
-      if (dt < 7000 && t >= prox) { explode(); prox = t + 350 + Math.random() * 400; }
+      if (dt < DUR) {
+        if (t >= proxF) {
+          var n = 1 + (Math.random() * 3 | 0);
+          for (var k = 0; k < n; k++) foguete(W * (.08 + Math.random() * .84));
+          if (Math.random() < .5) estoura(W * (.1 + Math.random() * .8), H * (.1 + Math.random() * .35), cor());
+          proxF = t + 280 + Math.random() * 380;
+        }
+        if (t >= proxC) { for (var q = 0; q < 6; q++) confete(); proxC = t + 90; }
+      }
       x.clearRect(0, 0, W, H);
+
+      x.globalCompositeOperation = "lighter";
+      fg.forEach(function (f) {
+        f.lx = f.x; f.ly = f.y; f.x += f.vx; f.y += f.vy; f.vy += g;
+        ps.push({ x: f.x, y: f.y, lx: f.lx, ly: f.ly, vx: (Math.random() - .5) * .6, vy: Math.random() * .8, v: .7, d: .05, c: "#ffd166", w: 1.6 });
+        if (f.vy >= -.4) { f.morto = true; estoura(f.x, f.y, f.c); }
+      });
+      fg = fg.filter(function (f) { return !f.morto; });
+
+      x.lineCap = "round";
       ps.forEach(function (p) {
-        p.x += p.vx; p.y += p.vy; p.vy += .045; p.vx *= .992; p.v -= .011;
-        if (p.v > 0) { x.globalAlpha = p.v; x.fillStyle = p.c; x.beginPath(); x.arc(p.x, p.y, 2.2, 0, 6.283); x.fill(); }
+        p.lx = p.x; p.ly = p.y; p.x += p.vx; p.y += p.vy; p.vy += .05; p.vx *= .985; p.vy *= .985; p.v -= p.d;
+        if (p.v > 0) { x.globalAlpha = Math.min(1, p.v); x.strokeStyle = p.c; x.lineWidth = p.w; x.beginPath(); x.moveTo(p.lx, p.ly); x.lineTo(p.x, p.y); x.stroke(); }
       });
       ps = ps.filter(function (p) { return p.v > 0; });
-      if (dt < 7000 || ps.length) requestAnimationFrame(quadro); else c.remove();
+
+      x.globalCompositeOperation = "source-over"; x.globalAlpha = 1;
+      cf.forEach(function (p) {
+        p.x += p.vx + Math.sin(p.y / 25) * .8; p.y += p.vy; p.r += p.vr;
+        x.save(); x.translate(p.x, p.y); x.rotate(p.r); x.fillStyle = p.c; x.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); x.restore();
+      });
+      cf = cf.filter(function (p) { return p.y < H + 20; });
+
+      if (dt < DUR || ps.length || fg.length || cf.length) requestAnimationFrame(quadro); else c.remove();
     })(performance.now());
-    boxAviso.innerHTML = "<b>🎆 Meta batida!</b><span>Parabéns, time MAD.U!</span>";
-    boxAviso.classList.add("on");
-    clearTimeout(tAviso); tAviso = setTimeout(function () { boxAviso.classList.remove("on"); }, 10000);
   }
   function fogosUmaVez(k, v) {
     var ch = "madu-fogos-" + k;
