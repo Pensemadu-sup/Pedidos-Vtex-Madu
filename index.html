@@ -142,6 +142,25 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
 @media(max-width:600px){.topo,main,.filtros{padding-left:16px;padding-right:16px}.atual{display:none}.tema{margin-left:auto}.sair+.tema{margin-left:0}.filtros{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.filtros::-webkit-scrollbar{display:none}.filtros .chip{padding:0 14px;font-size:.8rem}.filtros2{flex-wrap:wrap;overflow-x:visible}#barraF{position:static}main{padding-bottom:calc(96px + var(--sb))}.bloco,.meta{padding:20px}.kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:16px}.kpi span{flex-wrap:wrap}.kpi b{font-size:1.25rem}.sem{gap:4px}.sem .dia{font-size:.66rem}.sem .dia b{font-size:.6rem;overflow-wrap:anywhere;line-height:1.2}.ped summary{grid-template-columns:1fr auto}.ped .p2{display:none}.kpi:hover{transform:none}input,select,.busca,#per input{font-size:16px}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
   .rodape{max-width:1180px;margin:0 auto;padding:0 24px calc(32px + var(--sb));font-size:.75rem;font-weight:600;color:var(--suave);text-align:center}
+  .mapa{display:grid;gap:18px}
+.mapa svg{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
+.mapa .tl{cursor:pointer;transition:opacity .2s var(--ease)}
+.mapa .tl text{fill:#111;font-size:14px;font-weight:600;text-anchor:middle;pointer-events:none}
+.mapa .tl.vz rect{opacity:.35}
+.mapa .tl.dim{opacity:.25}
+.reg-leg{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.reg-leg li{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:16px;cursor:pointer;font-size:.86rem;font-weight:600;transition:background .2s}
+.reg-leg li.on{background:var(--faixa)}
+.reg-leg li>i{width:14px;height:14px;border-radius:5px;background:var(--c)}
+.reg-leg .barra i{background:var(--c)}
+.reg-leg small{font-weight:400;color:var(--suave)}
+.reg-info{padding:18px 20px;border-radius:20px;background:var(--faixa)}
+.reg-info h3{margin:0 0 12px;font-size:1rem;display:flex;align-items:center;gap:8px}
+.reg-info h3 i{width:14px;height:14px;border-radius:5px;background:var(--c)}
+.reg-info dl{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0}
+.reg-info dt{font-size:.74rem;color:var(--suave)}
+.reg-info dd{margin:2px 0 0;font-size:.95rem;font-weight:600;overflow-wrap:anywhere}
+.reg-info .l2{grid-column:1/-1}
 </style>
 </head>
 <body>
@@ -223,7 +242,16 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
         <ol class="rank" id="itens"></ol>
         <button type="button" class="btn sec mais" id="btnItens" hidden></button>
       </section>
-      <section class="bloco"><div class="bloco-topo"><h2>Estados</h2></div><ol class="rank" id="estados"></ol></section>
+     <section class="bloco" id="blocoEst">
+  <div class="bloco-topo"><h2>Estados</h2>
+    <div class="seg" id="visEst" role="group" aria-label="Visualização">
+      <button type="button" data-v="est" aria-pressed="true">Estados</button>
+      <button type="button" data-v="reg" aria-pressed="false">Regiões</button>
+    </div>
+  </div>
+  <ol class="rank" id="estados"></ol>
+  <div id="regioes" class="mapa" hidden></div>
+</section>
       <section class="bloco"><div class="bloco-topo"><h2>Formas de pagamento</h2></div><ol class="rank" id="pagto"></ol></section>
       <section class="bloco"><div class="bloco-topo"><h2>Cupons</h2></div><ol class="rank" id="cupons"></ol></section>
       <section class="bloco larga">
@@ -557,6 +585,7 @@ x.qtd += it.qtd; x.valor += it.qtd * it.preco;
     $("btnItens").textContent = MAIS ? "Ver só os 10 primeiros" : "Ver os 30 primeiros";
 
     lista($("estados"), agrupar(L, function (o) { return o.estado || "Sem informação"; }).slice(0, 8), function (l) { return BRL.format(l.v); }, pedsFmt, true);
+    regioes(L);
     lista($("pagto"), agrupar(L, function (o) { return o.pagamento || "Sem informação"; }).slice(0, 6), function (l) { return BRL.format(l.v); }, pedsFmt, true);
     lista($("cupons"), agrupar(L, function (o) { return o.cupom; }).slice(0, 6), function (l) { return BRL.format(l.v); }, pedsFmt, true);
 
@@ -1052,6 +1081,95 @@ function totalMan() {
     btn.disabled = false; btn.textContent = "Salvar metas";
   });  
   linhaItem(); totalMan();
+  /* ===== Regiões (cartograma do Brasil) ===== */
+var REGS = {
+  norte:    { nome: "Norte",        cor: "#4cc38a", ufs: ["AC","AM","AP","PA","RO","RR","TO"] },
+  nordeste: { nome: "Nordeste",     cor: "#ffa028", ufs: ["AL","BA","CE","MA","PB","PE","PI","RN","SE"] },
+  centro:   { nome: "Centro-Oeste", cor: "#9b9be0", ufs: ["DF","GO","MT","MS"] },
+  sudeste:  { nome: "Sudeste",      cor: "#4dabf7", ufs: ["ES","MG","RJ","SP"] },
+  sul:      { nome: "Sul",          cor: "#f783ac", ufs: ["PR","RS","SC"] }
+};
+var UF2R = {};
+Object.keys(REGS).forEach(function (r) { REGS[r].ufs.forEach(function (u) { UF2R[u] = r; }); });
+var GRID = { RR:[2,0], AP:[4,0], AM:[1,1], PA:[3,1], MA:[4,1], CE:[5,1], RN:[6,1],
+  AC:[0,2], RO:[1,2], MT:[2,2], TO:[3,2], PI:[4,2], PE:[5,2], PB:[6,2],
+  GO:[2,3], DF:[3,3], BA:[4,3], SE:[5,3], AL:[6,3],
+  MS:[2,4], MG:[3,4], ES:[4,4], PR:[2,5], SP:[3,5], RJ:[4,5], RS:[2,6], SC:[3,6] };
+var REGD = null, REGSEL = "", REGHOV = "";
+
+function topoDe(m) { var b = null; for (var k in m) if (b === null || m[k] > m[b]) b = k; return b; }
+function pct(v, t) { return (t ? v / t * 100 : 0).toFixed(1).replace(".", ",") + "%"; }
+
+function regioes(L) {
+  var A = {}, tot = 0;
+  Object.keys(REGS).forEach(function (k) { A[k] = { fat: 0, n: 0, un: 0, uf: {}, it: {}, pg: {} }; });
+  L.forEach(function (o) {
+    var uf = String(o.estado || "").toUpperCase(), k = UF2R[uf]; if (!k) return;
+    var a = A[k]; a.fat += o.valor; a.n++; tot += o.valor;
+    a.uf[uf] = (a.uf[uf] || 0) + o.valor;
+    var pg = o.pagamento || "Sem informação"; a.pg[pg] = (a.pg[pg] || 0) + 1;
+    o.itens.forEach(function (i) { var nm = i.nome || i.ref || "Item"; a.un += i.qtd; a.it[nm] = (a.it[nm] || 0) + i.qtd; });
+  });
+  REGD = { A: A, tot: tot };
+  var ord = Object.keys(REGS).sort(function (a, b) { return A[b].fat - A[a].fat; });
+
+  var svg = "<svg viewBox='0 0 448 392' role='img' aria-label='Mapa das regiões do Brasil'>";
+  Object.keys(GRID).forEach(function (uf) {
+    var p = GRID[uf], k = UF2R[uf], x = p[0] * 56 + 2, y = p[1] * 56 + 2;
+    svg += "<g class='tl" + (A[k].fat ? "" : " vz") + "' data-r='" + k + "'><rect x='" + x + "' y='" + y + "' width='52' height='52' rx='12' fill='" + REGS[k].cor + "'/><text x='" + (x + 26) + "' y='" + (y + 31) + "'>" + uf + "</text></g>";
+  });
+  svg += "</svg>";
+
+  var max = Math.max.apply(null, ord.map(function (k) { return A[k].fat; })) || 1;
+  var leg = "<ul class='reg-leg'>" + ord.map(function (k) {
+    return "<li data-r='" + k + "' style='--c:" + REGS[k].cor + "'><i></i><span>" + REGS[k].nome + "</span><span>" + pct(A[k].fat, tot) + " <small>· " + BRL.format(A[k].fat) + "</small></span>" +
+      "<div class='barra'><i style='--w:" + Math.max(2, A[k].fat / max * 100).toFixed(1) + "%'></i></div></li>";
+  }).join("") + "</ul>";
+
+  $("regioes").innerHTML = svg + leg + "<div class='reg-info' id='regInfo'></div>";
+  infoReg(REGHOV || REGSEL || ord[0]);
+}
+
+function infoReg(k) {
+  if (!REGD || !k) return;
+  var a = REGD.A[k], r = REGS[k], tot = REGD.tot;
+  [].forEach.call($("regioes").querySelectorAll("g[data-r]"), function (g) { g.classList.toggle("dim", g.getAttribute("data-r") !== k); });
+  [].forEach.call($("regioes").querySelectorAll("li[data-r]"), function (li) { li.classList.toggle("on", li.getAttribute("data-r") === k); });
+  var box = $("regInfo"); box.style.setProperty("--c", r.cor);
+  if (!a.n) { box.innerHTML = "<h3><i></i>" + r.nome + "</h3><p class='vazio'>Sem vendas neste período.</p>"; return; }
+  var ufs = Object.keys(a.uf).sort(function (x, y) { return a.uf[y] - a.uf[x]; });
+  var ti = topoDe(a.it), tp = topoDe(a.pg);
+  box.innerHTML = "<h3><i></i>" + r.nome + " · " + pct(a.fat, tot) + " do faturamento</h3><dl>" +
+    "<div><dt>Faturamento</dt><dd>" + BRL.format(a.fat) + "</dd></div>" +
+    "<div><dt>Pedidos</dt><dd>" + NUM.format(a.n) + "</dd></div>" +
+    "<div><dt>Unidades vendidas</dt><dd>" + NUM.format(a.un) + "</dd></div>" +
+    "<div><dt>Ticket médio</dt><dd>" + BRL.format(a.fat / a.n) + "</dd></div>" +
+    "<div><dt>Estado líder</dt><dd>" + esc(ufs[0]) + " · " + BRL.format(a.uf[ufs[0]]) + "</dd></div>" +
+    "<div><dt>Pagamento mais usado</dt><dd>" + esc(tp) + " · " + plural(a.pg[tp], "pedido", "pedidos") + "</dd></div>" +
+    "<div class='l2'><dt>Item mais vendido</dt><dd>" + esc(ti) + " · " + NUM.format(a.it[ti]) + " un.</dd></div>" +
+    "<div class='l2'><dt>Estados da região</dt><dd>" + ufs.map(function (u) { return esc(u) + " " + BRL.format(a.uf[u]); }).join(" · ") + "</dd></div>" +
+    "</dl>";
+}
+
+$("regioes").addEventListener("mouseover", function (e) {
+  var t = e.target.closest("[data-r]"); if (!t) return;
+  REGHOV = t.getAttribute("data-r"); infoReg(REGHOV);
+});
+$("regioes").addEventListener("mouseleave", function () {
+  REGHOV = ""; if (REGSEL) infoReg(REGSEL);
+});
+$("regioes").addEventListener("click", function (e) {
+  var t = e.target.closest("[data-r]"); if (!t) return;
+  var k = t.getAttribute("data-r"); REGSEL = REGSEL === k ? "" : k; infoReg(k);
+});
+$("visEst").addEventListener("click", function (e) {
+  var b = e.target.closest("button"); if (!b) return;
+  var reg = b.dataset.v === "reg";
+  [].forEach.call($("visEst").querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+  $("estados").hidden = reg; $("regioes").hidden = !reg;
+  $("blocoEst").querySelector("h2").textContent = reg ? "Regiões" : "Estados";
+});
+/* ===== fim das regiões ===== */
   /* ===== fim do pedido manual ===== */
   var tip = $("tip");
   var tipT = "";
