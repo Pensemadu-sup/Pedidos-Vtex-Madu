@@ -82,22 +82,31 @@ async function main() {
         frete: total("Shipping") / 100,
         desconto: Math.abs(total("Discounts")) / 100,
         estado: o.shippingData?.address?.state || "",
+        cep: o.shippingData?.address?.postalCode || "",
+        rua: o.shippingData?.address?.street || "",
+        numero: o.shippingData?.address?.number || "",
+        complemento: o.shippingData?.address?.complement || "",
+        bairro: o.shippingData?.address?.neighborhood || "",
+        cidade: o.shippingData?.address?.city || "",
         cliente: [o.clientProfileData?.firstName, o.clientProfileData?.lastName].filter(Boolean).join(" "),
 email: o.clientProfileData?.email || "",
 telefone: o.clientProfileData?.phone || "",
 documento: (o.clientProfileData?.isCorporate ? o.clientProfileData?.corporateDocument : o.clientProfileData?.document) || "",
 tipoDoc: o.clientProfileData?.isCorporate ? "CNPJ" : "CPF",
+razaoSocial: o.clientProfileData?.corporateName || "",
+nomeFantasia: o.clientProfileData?.tradeName || "",
+ie: o.clientProfileData?.stateInscription || "",
 envio: o.shippingData?.logisticsInfo?.[0]?.selectedSla || "",
 transportadora: o.shippingData?.logisticsInfo?.[0]?.deliveryCompany || "",
 entrega: o.shippingData?.logisticsInfo?.[0]?.shippingEstimateDate || "",
         pagamento: o.paymentData?.transactions?.[0]?.payments?.[0]?.paymentSystemName || "",
         parcelas: o.paymentData?.transactions?.[0]?.payments?.[0]?.installments || 1,
-        cupom: o.marketingData?.coupon || "",
-        itens: (o.items || []).map(x => ({ ref: x.refId || "", nome: x.name || "", qtd: x.quantity || 0, preco: (x.sellingPrice ?? x.price ?? 0) / 100 })),
+        pagarmeId: (JSON.stringify(o.paymentData || {}).match(/\bor_[A-Za-z0-9]{8,}\b/) || [""])[0],        cupom: o.marketingData?.coupon || "",
+        itens: (o.items || []).map(x => ({ ref: x.refId || "", nome: x.name || "", qtd: x.quantity || 0, preco: (x.sellingPrice ?? x.price ?? 0) / 100, imagem: x.imageUrl || "" })),
       });
     }
   }
-
+  console.log(`${pedidos.filter(o => o.pagarmeId).length} de ${pedidos.length} pedidos com ID Pagar.me`);
   // 3) criptografa com a senha (PBKDF2 + AES-GCM); o navegador descriptografa
   const b64 = b => Buffer.from(b).toString("base64");
   const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
