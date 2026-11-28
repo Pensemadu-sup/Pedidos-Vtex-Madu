@@ -1077,7 +1077,13 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
     PED = dados.pedidos;
     INICIO = dados.inicio ? ymd(dados.inicio) : "";
     SENHA = limpa(senha);
-    MAN = rs[0]; NEO = rs[1]; MADU = rs[2]; METASB = rs[3];
+    var rs = await Promise.all([
+      lerCripto("data/manuais.enc.json?v=" + Date.now(), SENHA).catch(function () { return null; }),
+      lerCripto("data/neo.enc.json?v=" + Date.now(), SENHA).catch(function () { return null; }),
+      lerCripto("data/madu.enc.json?v=" + Date.now(), SENHA).catch(function () { return null; }),
+      lerCripto("data/metas.enc.json?v=" + Date.now(), SENHA).catch(function () { return null; })
+    ]);
+    MAN = rs[0] || []; NEO = rs[1] || {}; MADU = rs[2] || {}; METASB = rs[3] || {};
     montar();
 
     $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", {
