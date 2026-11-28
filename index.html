@@ -1098,7 +1098,7 @@ var UF2R = {};
 Object.keys(REGS).forEach(function (r) { REGS[r].ufs.forEach(function (u) { UF2R[u] = r; }); });
 
   
-var REGD = null, REGSEL = "", REGHOV = "";
+var REGD = null, REGSEL = "";
 
 function topoDe(m) { var b = null; for (var k in m) if (b === null || m[k] > m[b]) b = k; return b; }
 function pct(v, t) { return (t ? v / t * 100 : 0).toFixed(1).replace(".", ",") + "%"; }
@@ -1139,8 +1139,8 @@ function regioes(L) {
       "<div class='barra'><i style='--w:" + Math.max(2, A[k].fat / max * 100).toFixed(1) + "%'></i></div></li>";
   }).join("") + "</ul>";
 
-  $("regioes").innerHTML = svg + leg + "<div class='reg-info' id='regInfo'></div>";
-  infoReg(REGHOV || REGSEL || ord[0]);
+ $("regioes").innerHTML = svg + "<div class='reg-info' id='regInfo'></div>" + leg;
+infoReg(REGSEL || ord[0]);
 }
 
 function infoReg(k) {
@@ -1164,16 +1164,10 @@ function infoReg(k) {
     "</dl>";
 }
 
-$("regioes").addEventListener("mouseover", function (e) {
-  var t = e.target.closest("[data-r]"); if (!t) return;
-  REGHOV = t.getAttribute("data-r"); infoReg(REGHOV);
-});
-$("regioes").addEventListener("mouseleave", function () {
-  REGHOV = ""; if (REGSEL) infoReg(REGSEL);
-});
 $("regioes").addEventListener("click", function (e) {
   var t = e.target.closest("[data-r]"); if (!t) return;
-  var k = t.getAttribute("data-r"); REGSEL = REGSEL === k ? "" : k; infoReg(k);
+  REGSEL = t.getAttribute("data-r");
+  infoReg(REGSEL);
 });
 $("visEst").addEventListener("click", function (e) {
   var b = e.target.closest("button"); if (!b) return;
