@@ -485,7 +485,8 @@ it += (cnpj
   ? li("Razão social", o.razaoSocial) + li("Nome fantasia", o.nomeFantasia) + li("CNPJ", o.documento) + li("Inscrição estadual", o.ie) + li("Nome do cliente", o.cliente)
   : li("Cliente", o.cliente) + li(o.tipoDoc || "CPF", o.documento))
   + li("Telefone", o.telefone) + li("E-mail", o.email)
-  + li("CEP", o.cep) + li("Rua", o.rua) + li("Número", o.numero) + li("Complemento", o.complemento) + li("Bairro", o.bairro) + li("Cidade", o.cidade)
+  + li("CEP", o.cep) + li("Rua", o.rua) + li("Número", o.numero) + li("Complemento", o.complemento) + li("Bairro", o.bairro) + li("Cidade", o.cidade) + li("Estado", o.estado)
+  + li("Pagamento", o.pagamento ? o.pagamento + (o.parcelas > 1 ? " em " + o.parcelas + "x" : ehCartao(o.pagamento) ? " à vista" : "") : "")
   + li("Envio", o.envio) + li("Transportadora", o.transportadora) + li("Entrega estimada", o.entrega ? br(ymd(o.entrega), 1) : "")
   + li("ID Pagar.me", o.pagarmeId);
       if (o.frete) it += "<li><span>Frete</span><b>" + BRL.format(o.frete) + "</b></li>";
