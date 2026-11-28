@@ -145,8 +145,13 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   .mapa{display:grid;gap:18px}
 .mapa svg{width:100%;max-width:420px;height:auto;display:block;margin:0 auto}
 .mapa .tl{cursor:pointer;transition:opacity .2s var(--ease)}
-.mapa .tl text{fill:#111;font-size:14px;font-weight:600;text-anchor:middle;pointer-events:none}
-.mapa .tl.vz rect{opacity:.35}
+.mapa svg{max-width:380px}
+.mapa .tl path{stroke:var(--card);stroke-width:2.5;stroke-linejoin:round;transition:filter .2s}
+.mapa .tl:hover path{filter:brightness(1.1)}
+.mapa .tl.vz path{opacity:.35}
+.mapa .tl text{fill:#111;text-anchor:middle;pointer-events:none}
+.mapa .tl .rn{font-size:10px;font-weight:600}
+.mapa .tl .rp{font-size:15px;font-weight:900}
 .mapa .tl.dim{opacity:.25}
 .reg-leg{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 .reg-leg li{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border-radius:16px;cursor:pointer;font-size:.86rem;font-weight:600;transition:background .2s}
@@ -1091,10 +1096,8 @@ var REGS = {
 };
 var UF2R = {};
 Object.keys(REGS).forEach(function (r) { REGS[r].ufs.forEach(function (u) { UF2R[u] = r; }); });
-var GRID = { RR:[2,0], AP:[4,0], AM:[1,1], PA:[3,1], MA:[4,1], CE:[5,1], RN:[6,1],
-  AC:[0,2], RO:[1,2], MT:[2,2], TO:[3,2], PI:[4,2], PE:[5,2], PB:[6,2],
-  GO:[2,3], DF:[3,3], BA:[4,3], SE:[5,3], AL:[6,3],
-  MS:[2,4], MG:[3,4], ES:[4,4], PR:[2,5], SP:[3,5], RJ:[4,5], RS:[2,6], SC:[3,6] };
+
+  
 var REGD = null, REGSEL = "", REGHOV = "";
 
 function topoDe(m) { var b = null; for (var k in m) if (b === null || m[k] > m[b]) b = k; return b; }
@@ -1113,10 +1116,20 @@ function regioes(L) {
   REGD = { A: A, tot: tot };
   var ord = Object.keys(REGS).sort(function (a, b) { return A[b].fat - A[a].fat; });
 
-  var svg = "<svg viewBox='0 0 448 392' role='img' aria-label='Mapa das regiões do Brasil'>";
-  Object.keys(GRID).forEach(function (uf) {
-    var p = GRID[uf], k = UF2R[uf], x = p[0] * 56 + 2, y = p[1] * 56 + 2;
-    svg += "<g class='tl" + (A[k].fat ? "" : " vz") + "' data-r='" + k + "'><rect x='" + x + "' y='" + y + "' width='52' height='52' rx='12' fill='" + REGS[k].cor + "'/><text x='" + (x + 26) + "' y='" + (y + 31) + "'>" + uf + "</text></g>";
+   var MAPA = {
+    norte:    { x: 131, y: 99,  d: "M138 196l-10 -2l-6 -2l-15 -6l-4 -3l-3 -4l-8 -12l-2 -3l-1 -5l-1 -1l-1 -1l-2 0l-8 2l-2 1l-10 7l-6 1l-17 1l-2 -1l-2 -1l-3 -2l-4 -4l-6 -5l-4 -2l-6 -1l-2 -1l-3 -2l-2 -4l-1 -7l0 -2l1 -2l1 -1l4 -1l1 -1l3 -6l3 -6l4 -7l5 -5l5 -4l2 -2l5 -1l2 -1l1 -2l2 -3l3 -18l0 -3l0 -2l0 -3l-3 -3l-1 -6l0 -5l0 -2l1 -2l7 -4l9 -4l4 -1l3 0l2 1l3 3l6 3l4 1l3 -1l1 -1l4 -4l5 -10l4 -8l1 -3l0 -3l1 -2l2 0l2 0l6 0l6 -1l8 -4l8 -6l4 -1l3 5l0 2l0 2l-1 6l0 2l1 8l3 7l1 2l4 4l2 0l2 1l3 0l7 -4l5 -1l11 -1l18 -4l4 0l4 1l2 0l2 -1l2 -1l11 -18l1 1l2 3l4 12l6 8l1 3l0 3l-2 9l1 4l1 1l1 1l6 0l2 0l6 3l3 1l10 1l10 4l-2 10l-2 5l-8 14l-7 10l-1 3l0 3l0 3l4 8l7 18l4 6l5 6l2 4l0 6l-4 19l-5 0l-4 1l-18 6l-7 2l-2 -1l-1 -2l-1 -3l-1 -11l-3 -17l-1 -2l-2 -1l-8 -2l-10 -1l-17 0l-9 -1l-4 -2l-4 -2l-3 -3l-2 -3l-2 -4l-3 -3l-2 0l-2 0l-5 5l-5 4l-14 8l-2 2l-3 4l-1 3l0 3l0 3l2 5l5 9l1 3l1 2l0 3l-3 6z" },
+    nordeste: { x: 312, y: 142, d: "M275 70l5 1l2 1l2 2l4 5l2 2l3 1l2 1l9 1l15 3l14 1l5 2l9 5l3 2l5 6l3 3l4 2l9 1l5 2l3 2l2 4l2 8l1 6l0 7l-2 5l-3 7l-3 5l-3 4l-9 9l-5 9l-10 11l-3 6l-1 7l-1 22l-2 11l-1 4l-4 5l-2 -5l-6 -16l-3 -3l-14 -9l-7 -3l-6 -5l-1 0l-2 1l-11 7l-11 5l0 -9l-1 -12l0 -9l4 -19l0 -6l-2 -4l-5 -6l-4 -6l-7 -18l-4 -8l0 -3l0 -3l1 -3l7 -10l8 -14l2 -5l2 -10z" },
+    centro:   { x: 194, y: 214, d: "M197 300l-9 -2l-1 -1l-1 -1l-2 -3l-1 -6l-2 -2l-1 -2l-4 -2l-3 0l-9 -1l-2 -1l-1 0l3 -39l-1 -7l-4 -6l-2 -3l-3 -1l-4 -1l-4 0l-4 -1l-2 -1l-1 -3l-1 -21l3 -6l0 -3l-1 -2l-1 -3l-5 -9l-2 -5l0 -3l0 -3l1 -3l3 -4l2 -2l14 -8l5 -4l5 -5l2 0l2 0l3 3l2 4l2 3l3 3l4 2l4 2l9 1l17 0l10 1l8 2l2 1l1 2l3 17l1 11l1 3l1 2l2 1l7 -2l18 -6l4 -1l5 0l0 9l1 12l0 9l-5 4l-2 3l-3 6l-3 6l-4 5l-3 3l-8 2l-7 4l-3 3l-3 7l-7 4l-3 2l-7 12l-8 9l-7 7l-2 3l-2 5z" },
+    sudeste:  { x: 283, y: 261, d: "M337 243l-2 9l-1 5l-7 13l-3 9l-2 3l-4 4l-1 0l-3 2l-9 1l-20 5l-8 3l-9 6l-11 9l-2 -5l-3 -3l-4 -2l-2 -2l-5 -7l-2 -3l-6 -1l-13 -3l-5 -1l-7 0l8 -9l7 -12l3 -2l7 -4l3 -7l3 -3l7 -4l8 -2l3 -3l4 -5l3 -6l3 -6l2 -3l5 -4l11 -5l11 -7l2 -1l1 0l6 5l7 3l14 9l3 3l6 16l2 5z" },
+    sul:      { x: 223, y: 332, d: "M257 312l-3 3l-2 4l-1 6l1 7l0 4l-2 5l-1 3l-4 4l-5 6l-10 14l-11 10l-10 14l-2 2l-2 1l0 -1l-1 -1l0 -7l-2 -4l-4 -3l-18 -14l-2 -1l-10 -2l-1 -1l-1 -1l0 0l5 -5l11 -12l10 -9l7 -4l1 -2l2 -7l0 -3l-2 -2l-5 -2l0 0l-1 -3l0 -4l3 -7l2 -5l2 -3l7 -7l7 0l5 1l13 3l6 1l2 3l5 7l2 2l4 2l3 3l2 5z" }
+  };
+  var svg = "<svg viewBox='0 0 390 401' role='img' aria-label='Mapa das regiões do Brasil'>";
+  Object.keys(MAPA).forEach(function (k) {
+    var m = MAPA[k];
+    svg += "<g class='tl" + (A[k].fat ? "" : " vz") + "' data-r='" + k + "'>" +
+      "<path d='" + m.d + "' fill='" + REGS[k].cor + "'/>" +
+      "<text class='rn' x='" + m.x + "' y='" + (m.y - 3) + "'>" + REGS[k].nome + "</text>" +
+      "<text class='rp' x='" + m.x + "' y='" + (m.y + 13) + "'>" + pct(A[k].fat, tot) + "</text></g>";
   });
   svg += "</svg>";
 
