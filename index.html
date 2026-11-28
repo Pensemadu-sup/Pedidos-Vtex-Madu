@@ -100,6 +100,13 @@ h1{margin:0;font-size:clamp(2.2rem,7vw,4.2rem);font-weight:900;line-height:1.04;
 .rank{list-style:none;margin:0;padding:0;display:grid;gap:14px}
 .rank li{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:.88rem}
 .rank .nome{font-weight:600;overflow-wrap:anywhere}.rank .ref{font-size:.74rem;color:var(--suave);font-weight:400}
+  .rank .nome{display:flex;gap:12px;align-items:flex-start}
+.rank .tx{min-width:0}
+.th{position:relative;flex:none;width:52px;height:52px;border-radius:12px;background:#fff;border:1px solid var(--linha);cursor:zoom-in;outline:0}
+.th img{display:block;width:100%;height:100%;object-fit:contain;border-radius:11px;transform-origin:left center;transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-radius .35s var(--ease)}
+.th:hover,.th:focus{z-index:15}
+.th:hover img,.th:focus img{transform:scale(4.2);border-radius:14px;box-shadow:0 30px 60px -12px rgba(0,0,0,.55),0 0 0 3px var(--laranja);background:#fff}
+.bloco:hover{position:relative;z-index:3}
 .rank .val{font-weight:600;text-align:right;white-space:nowrap}.rank .val small{display:block;font-size:.74rem;color:var(--suave);font-weight:400}
 .barra{grid-column:1/-1;height:7px;border-radius:99px;background:var(--faixa);overflow:hidden}
 .barra i{display:block;height:100%;width:var(--w);border-radius:99px;background:var(--laranja);transform-origin:left;animation:cresce .9s var(--ease) both}
@@ -358,12 +365,18 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     el.textContent = (p >= 0 ? "▲ " : "▼ ") + Math.abs(Math.round(p)) + "%";
     el.title = "Em relação ao período anterior equivalente";
   }
-
+  function foto(u) {
+    u = String(u || "");
+    if (u.indexOf("//") === 0) u = "https:" + u;
+    if (!/^https:\/\//.test(u)) return "";
+    var g = u.replace(/-\d+-\d+(\/)/, "-300-300$1");
+    return "<span class='th' tabindex='0'><img src='" + esc(g) + "' alt='' loading='lazy' referrerpolicy='no-referrer' onerror=\"this.parentNode.style.display='none'\"></span>";
+  }
   function lista(el, linhas, fv, fs, lav) {
     if (!linhas.length) { el.innerHTML = "<li class='vazio'>Sem dados neste período.</li>"; return; }
     var max = linhas[0].v || 1;
     el.innerHTML = linhas.map(function (l) {
-      return "<li><span class='nome'>" + esc(l.k) + (l.ref && l.ref !== l.k ? "<br><span class='ref'>" + esc(l.ref) + "</span>" : "") + "</span>" +
+    return "<li><span class='nome'>" + (l.img ? foto(l.img) : "") + "<span class='tx'>" + esc(l.k) + (l.ref && l.ref !== l.k ? "<br><span class='ref'>" + esc(l.ref) + "</span>" : "") + "</span></span>" +
         "<span class='val'>" + fv(l) + "<small>" + fs(l) + "</small></span>" +
         "<div class='barra" + (lav ? " lav" : "") + "'><i style='--w:" + Math.max(2, l.v / max * 100).toFixed(1) + "%'></i></div></li>";
     }).join("");
@@ -448,10 +461,11 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
     var mp = {};
     L.forEach(function (o) { o.itens.forEach(function (it) {
       var k = it.ref || it.nome, x = mp[k] || (mp[k] = { k: it.nome || it.ref, ref: it.ref, qtd: 0, valor: 0 });
-      x.qtd += it.qtd; x.valor += it.qtd * it.preco;
+x.qtd += it.qtd; x.valor += it.qtd * it.preco;
+      if (!x.img && it.imagem) x.img = it.imagem;
     }); });
     var todos = Object.keys(mp).map(function (k) { return mp[k]; }).sort(function (a, b) { return b[ORD] - a[ORD]; });
-    lista($("itens"), todos.slice(0, MAIS ? 30 : 10).map(function (x) { return { k: x.k, ref: x.ref, v: x[ORD], qtd: x.qtd, valor: x.valor }; }),
+    lista($("itens"), todos.slice(0, MAIS ? 30 : 10).map(function (x) { return { k: x.k, ref: x.ref, v: x[ORD], qtd: x.qtd, valor: x.valor, img: x.img }; }),
       function (l) { return ORD === "qtd" ? NUM.format(l.qtd) + " un." : BRL.format(l.valor); },
       function (l) { return ORD === "qtd" ? BRL.format(l.valor) : NUM.format(l.qtd) + " un."; });
     $("btnItens").hidden = todos.length <= 10;
