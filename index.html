@@ -471,13 +471,15 @@ svg.graf text{fill:var(--suave);font-size:11px;font-family:inherit}
   function pedidos() {
     var q = BUSCA.trim().toLowerCase();
     var R = LINHAS.filter(function (o) {
-      return !q || (o.id + " " + o.estado + " " + o.pagamento + " " + o.cupom + " " + (o.cliente || "") + " " + (o.documento || "") + " " + (o.razaoSocial || "") + " " + (o.nomeFantasia || "") + " " + (o.ie || "") + " " + (o.cep || "") + " " + (o.rua || "") + " " + (o.cidade || "") + " " + (o.pagarmeId || "") + " " + (o.neo || "") + " " + (o.telefone || "") + " " + (o.transportadora || "") + " " + (STATUS[o.status] || o.status) + " " + o.itens.map(function (x) { return x.nome + " " + x.ref; }).join(" ")).toLowerCase().indexOf(q) > -1;
+      return !q || (o.id + " " + o.estado + " " + o.pagamento + " " + o.cupom + " " + (o.cliente || "") + " " + (o.documento || "") + " " + (o.razaoSocial || "") + " " + (o.nomeFantasia || "") + " " + (o.ie || "") + " " + (o.cep || "") + " " + (o.rua || "") + " " + (o.cidade || "") + " " + (o.pagarmeId || "") + " " + neoDe(o) + " " + (o.telefone || "") + " " + (o.transportadora || "") + " " + (STATUS[o.status] || o.status) + " " + o.itens.map(function (x) { return x.nome + " " + x.ref; }).join(" ")).toLowerCase().indexOf(q) > -1;
     });
     pedidos.R = R;
     $("peds").innerHTML = R.length ? R.slice(0, LIM).map(function (o) {
       var data = new Date(o.data).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: TZ });
       var it = o.itens.map(function (x) { return "<li><span>" + x.qtd + "× " + esc(x.nome || x.ref) + "</span><b>" + BRL.format(x.qtd * x.preco) + "</b></li>"; }).join("");
       var li = function (r, v) { return v ? "<li><span>" + r + "</span><b>" + esc(v) + "</b></li>" : ""; };
+            var nv = neoDe(o);
+      it += "<li class='neo'><span>Pedido NEO</span><span class='neo-c'><input class='neo-in' inputmode='numeric' maxlength='20' placeholder='Somente números' aria-label='Pedido NEO' value='" + esc(nv) + "' data-v='" + esc(nv) + "' data-id='" + esc(o.id) + "'><button type='button' class='btn sec peq neo-ok'>OK</button></span></li>";
 var cnpj = o.tipoDoc === "CNPJ";
 it += (cnpj
   ? li("Razão social", o.razaoSocial) + li("Nome fantasia", o.nomeFantasia) + li("CNPJ", o.documento) + li("Inscrição estadual", o.ie) + li("Nome do cliente", o.cliente)
@@ -500,7 +502,7 @@ it += (cnpj
      var l = ["Pedido;Data;Status;Estado;Pagamento;Parcelas;Cupom;Frete;Descontos;Valor;Itens;Cliente;Documento;Telefone;E-mail;Envio;Transportadora;Entrega estimada;Razão social;Nome fantasia;IE;CEP;Rua;Número;Complemento;Bairro;Cidade;ID Pagar.me;Pedido NEO"];
     pedidos.R.forEach(function (o) {
       l.push([t(o.id), t(new Date(o.data).toLocaleString("pt-BR", { timeZone: TZ })), t(STATUS[o.status] || o.status), t(o.estado), t(o.pagamento), (o.parcelas || 1), t(o.cupom), n(o.frete), n(o.desconto), n(o.valor),
-        t(o.itens.map(function (x) { return x.qtd + "x " + (x.nome || x.ref); }).join(" | ")), t(o.cliente), t(o.documento), t(o.telefone), t(o.email), t(o.envio), t(o.transportadora), t(o.entrega ? br(ymd(o.entrega), 1) : ""), t(o.razaoSocial), t(o.nomeFantasia), t(o.ie), t(o.cep), t(o.rua), t(o.numero), t(o.complemento), t(o.bairro), t(o.cidade), t(o.pagarmeId), t(o.neo)].join(";"));
+        t(o.itens.map(function (x) { return x.qtd + "x " + (x.nome || x.ref); }).join(" | ")), t(o.cliente), t(o.documento), t(o.telefone), t(o.email), t(o.envio), t(o.transportadora), t(o.entrega ? br(ymd(o.entrega), 1) : ""), t(o.razaoSocial), t(o.nomeFantasia), t(o.ie), t(o.cep), t(o.rua), t(o.numero), t(o.complemento), t(o.bairro), t(o.cidade), t(o.pagarmeId), t(neoDe(o))].join(";"));
     });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + l.join("\r\n")], { type: "text/csv;charset=utf-8" }));
@@ -543,7 +545,8 @@ it += (cnpj
   $("btnCsv").addEventListener("click", csv);
 
     /* ===== Pedido manual ===== */
-  var PED = [], MAN = [], INICIO = "", SENHA = "", EDIT = "";
+var PED = [], MAN = [], NEO = {}, INICIO = "", SENHA = "", EDIT = "";
+function neoDe(o) { return NEO[o.id] || o.neo || ""; }
   var REPO = "Pensemadu-sup/Pedidos-Vtex-Madu", ARQ = "data/manuais.enc.json";
   var MSGM = {
     "sem-token": "Cole primeiro o token do GitHub no quadro abaixo.",
@@ -568,6 +571,8 @@ it += (cnpj
 .lin{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:14px 18px;font-size:.86rem}
 .lin>span:first-child{min-width:0;overflow-wrap:anywhere}
 .btn.peq{min-height:34px;padding:0 14px}
+.neo-c{display:flex;gap:8px;align-items:center}
+.neo-in{width:170px;min-height:34px;padding:0 14px;border:1px solid var(--linha);border-radius:999px;background:var(--card);font-size:16px;font-weight:600}
 @media(max-width:600px){.mi{grid-template-columns:1fr 1fr 40px}.mi .in-n,.mi .in-r{grid-column:1/-1}.man2{grid-template-columns:1fr}.lin{grid-template-columns:minmax(0,1fr) auto}.lin .acoes{grid-column:1/-1;justify-content:flex-end}#manual .bloco{padding:20px}}`;
   document.head.appendChild(st);
 
@@ -667,17 +672,17 @@ sec.innerHTML = `
   }
 
   function tk() { try { return localStorage.getItem("madu-gh") || ""; } catch (x) { return ""; } }
-  function gh(metodo, corpo) {
-    return fetch("https://api.github.com/repos/" + REPO + "/contents/" + ARQ, {
+ function gh(metodo, corpo, arq) {
+    return fetch("https://api.github.com/repos/" + REPO + "/contents/" + (arq || ARQ), {
       method: metodo,
       headers: { Authorization: "Bearer " + tk(), Accept: "application/vnd.github+json" },
       body: corpo ? JSON.stringify(corpo) : undefined
     });
   }
   /* lê a versão mais recente do arquivo, aplica a mudança e grava de volta */
-  async function salvarMan(mut, msg) {
+ async function salvarMan(mut, msg, arq, vazio) {
     if (!tk()) throw new Error("sem-token");
-    var r = await gh("GET"), sha, lista = [];
+    var r = await gh("GET", null, arq), sha, lista = vazio === undefined ? [] : vazio;
     if (r.status === 401 || r.status === 403) throw new Error("token");
     if (r.status !== 404) {
       if (!r.ok) throw new Error("api " + r.status);
@@ -685,8 +690,8 @@ sec.innerHTML = `
         try { lista = await decifrarAuto(JSON.parse(atob(j.content.replace(/\s/g, ""))), SENHA); } catch (e) { throw new Error("senha"); }
     }
     lista = mut(lista);
-    var p = await gh("PUT", { message: msg, content: btoa(await cifrar(lista, SENHA)), sha: sha, branch: "main" });
-    if (!p.ok) throw new Error(p.status === 401 || p.status === 403 || p.status === 404 ? "token" : p.status === 409 || p.status === 422 ? "conflito" : "api " + p.status);
+var p = await gh("PUT", { message: msg, content: btoa(await cifrar(lista, SENHA)), sha: sha, branch: "main" }, arq);
+   if (!p.ok) throw new Error(p.status === 401 || p.status === 403 || p.status === 404 ? "token" : p.status === 409 || p.status === 422 ? "conflito" : "api " + p.status);
     return lista;
   }
 
@@ -823,6 +828,29 @@ function totalMan() {
       montar(); desenhar(); listaMan();
     } catch (x) { aviso(MSGM[x.message] || "Não foi possível excluir (" + x.message + ")."); b.disabled = false; }
   });
+    async function salvaNeo(inp, btn) {
+    var id = inp.dataset.id, v = inp.value.trim();
+    if (!/^\d*$/.test(v)) { btn.textContent = "Só números"; setTimeout(function () { btn.textContent = "OK"; }, 2000); return; }
+    if (v === inp.dataset.v) return;
+    btn.disabled = true; btn.textContent = "Salvando…";
+    try {
+      NEO = await salvarMan(function (m) { if (v) m[id] = v; else delete m[id]; return m; }, "Pedido NEO " + id, "data/neo.enc.json", {});
+      inp.dataset.v = v; btn.textContent = "Salvo ✓";
+    } catch (x) {
+      btn.textContent = "OK";
+      alert(x.message === "sem-token" ? "Guarde primeiro o token do GitHub na aba Pedido manual." : (MSGM[x.message] || "Não foi possível salvar (" + x.message + ")."));
+    }
+    btn.disabled = false;
+    setTimeout(function () { btn.textContent = "OK"; }, 2000);
+  }
+  $("peds").addEventListener("click", function (e) {
+    var b = e.target.closest(".neo-ok"); if (!b) return;
+    salvaNeo(b.parentNode.querySelector(".neo-in"), b);
+  });
+  $("peds").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target.classList.contains("neo-in")) return;
+    e.preventDefault(); salvaNeo(e.target, e.target.parentNode.querySelector(".neo-ok"));
+  });
   linhaItem(); totalMan();
   /* ===== fim do pedido manual ===== */
   var tip = $("tip");
@@ -848,6 +876,7 @@ var dados = await abrir(senha); ULT = dados.atualizado; avisarNovos(dados.pedido
     INICIO = dados.inicio ? ymd(dados.inicio) : "";
     SENHA = limpa(senha);
     try { MAN = (await lerCripto("data/manuais.enc.json?v=" + Date.now(), senha)) || []; } catch (x) { MAN = []; }
+        try { NEO = (await lerCripto("data/neo.enc.json?v=" + Date.now(), senha)) || {}; } catch (x) { NEO = {}; }
     montar();
 
     $("atual").textContent = "Atualizado em " + new Date(dados.atualizado).toLocaleString("pt-BR", {
