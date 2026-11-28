@@ -1,4 +1,4 @@
-<!doctype html>
+e<!doctype html>
 <html lang="pt-BR" data-tema="claro">
 <head >
 <meta charset="utf-8">
@@ -403,13 +403,13 @@ var METAS = { "2026-11": [25000, 0, 65000] };
     c.style.cssText = "position:fixed;inset:0;width:100%;height:100%;z-index:60;pointer-events:none";
     document.body.appendChild(c);
     var W = c.width = innerWidth, H = c.height = innerHeight, x = c.getContext("2d");
-    var ps = [], fg = [], cf = [], t0 = performance.now(), proxF = 0, proxC = 0, DUR = 10000, g = .12;
+    var ps = [], fg = [], cf = [], t0 = performance.now(), proxF = 0, proxC = 0, DUR = 6000, g = .12;
 
     function estoura(cx, cy, cc) {
-      var n = 90 + (Math.random() * 60 | 0), anel = Math.random() < .35, c2 = cor();
+   var n = 35 + (Math.random() * 20 | 0), anel = Math.random() < .35, c2 = cor();
       for (var i = 0; i < n; i++) {
         var a = Math.random() * 6.283, s = anel ? 5 : 1.5 + Math.random() * 5.5;
-        ps.push({ x: cx, y: cy, lx: cx, ly: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, d: .008 + Math.random() * .01, c: anel && i % 2 ? c2 : cc, w: 1.5 + Math.random() * 1.5 });
+        ps.push({ x: cx, y: cy, lx: cx, ly: cy, vx: Math.cos(a) * s, vy: Math.sin(a) * s, v: 1, d: .014 + Math.random() * .012, c: anel && i % 2 ? c2 : cc, w: 1.5 + Math.random() * 1.5 });
       }
     }
     function foguete(xx) {
@@ -419,25 +419,25 @@ var METAS = { "2026-11": [25000, 0, 65000] };
     function confete() {
       cf.push({ x: Math.random() * W, y: -12, vx: (Math.random() - .5) * 2, vy: 2 + Math.random() * 3, r: Math.random() * 6, vr: (Math.random() - .5) * .3, w: 6 + Math.random() * 6, h: 4 + Math.random() * 5, c: cor() });
     }
-    for (var i = 0; i < 6; i++) foguete(W * (.1 + i * .16));
+    for (var i = 0; i < 3; i++) foguete(W * (.2 + i * .3));
 
     (function quadro(t) {
       var dt = t - t0;
       if (dt < DUR) {
         if (t >= proxF) {
-          var n = 1 + (Math.random() * 3 | 0);
+          var n = 1 + (Math.random() * 2 | 0);
           for (var k = 0; k < n; k++) foguete(W * (.08 + Math.random() * .84));
           if (Math.random() < .5) estoura(W * (.1 + Math.random() * .8), H * (.1 + Math.random() * .35), cor());
-          proxF = t + 280 + Math.random() * 380;
+proxF = t + 500 + Math.random() * 500;
         }
-        if (t >= proxC) { for (var q = 0; q < 6; q++) confete(); proxC = t + 90; }
+        if (t >= proxC) { for (var q = 0; q < 2; q++) confete(); proxC = t + 160; }
       }
       x.clearRect(0, 0, W, H);
 
-      x.globalCompositeOperation = "lighter";
+     x.globalCompositeOperation = "source-over";  
       fg.forEach(function (f) {
         f.lx = f.x; f.ly = f.y; f.x += f.vx; f.y += f.vy; f.vy += g;
-        ps.push({ x: f.x, y: f.y, lx: f.lx, ly: f.ly, vx: (Math.random() - .5) * .6, vy: Math.random() * .8, v: .7, d: .05, c: "#ffd166", w: 1.6 });
+        if (Math.random() < .5) ps.push({ x: f.x, y: f.y, lx: f.lx, ly: f.ly, vx: (Math.random() - .5) * .6, vy: Math.random() * .8, v: .7, d: .08, c: "#ffd166", w: 1.6 });
         if (f.vy >= -.4) { f.morto = true; estoura(f.x, f.y, f.c); }
       });
       fg = fg.filter(function (f) { return !f.morto; });
